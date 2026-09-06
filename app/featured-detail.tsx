@@ -9,6 +9,7 @@ export default function FeaturedDetail({
   phase,
   panelRef,
   imageRef,
+  closeButtonRef,
   onClose,
 }: {
   work: FeaturedWork;
@@ -16,11 +17,14 @@ export default function FeaturedDetail({
   phase: FeaturedPhase;
   panelRef: RefObject<HTMLElement | null>;
   imageRef: RefObject<HTMLImageElement | null>;
+  closeButtonRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }) {
   return (
     <section
       ref={panelRef}
+      role="dialog"
+      aria-modal="true"
       className={`featured-detail image-${imageSide}`}
       data-phase={phase}
       data-featured-detail
@@ -43,7 +47,7 @@ export default function FeaturedDetail({
         <p>
           {work.categoryLabel} · {work.year}
         </p>
-        <button type="button" onClick={onClose}>
+        <button ref={closeButtonRef} type="button" onClick={onClose}>
           返回
         </button>
       </div>

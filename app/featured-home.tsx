@@ -28,18 +28,31 @@ export default function FeaturedHome() {
   const sourceRectRef = useRef<RectSnapshot | null>(null);
   const panelRef = useRef<HTMLElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const gridRef = useRef<HTMLElement | null>(null);
   const layersRef = useRef<HTMLElement[]>([]);
-  const animationsRef = useRef<Animation[]>([]);
+  const cardAnimationsRef = useRef<Animation[]>([]);
+  const transientAnimationsRef = useRef<Animation[]>([]);
   const selectionActiveRef = useRef(false);
   const closingRef = useRef(false);
   const selected = featuredWorks.find(({ id }) => id === state.selectedId) ?? null;
 
-  const clearRuntime = useCallback(() => {
-    for (const animation of animationsRef.current) animation.cancel();
-    animationsRef.current = [];
+  const clearCardAnimations = useCallback(() => {
+    for (const animation of cardAnimationsRef.current) animation.cancel();
+    cardAnimationsRef.current = [];
+  }, []);
+
+  const clearTransientRuntime = useCallback(() => {
+    for (const animation of transientAnimationsRef.current) animation.cancel();
+    transientAnimationsRef.current = [];
     for (const layer of layersRef.current) layer.remove();
     layersRef.current = [];
   }, []);
+
+  const clearRuntime = useCallback(() => {
+    clearCardAnimations();
+    clearTransientRuntime();
+  }, [clearCardAnimations, clearTransientRuntime]);
 
   const close = useCallback(async () => {
     if (!selected || closingRef.current) return;
@@ -50,7 +63,7 @@ export default function FeaturedHome() {
       fill: 'forwards',
     });
     if (fade) {
-      animationsRef.current.push(fade);
+      transientAnimationsRef.current.push(fade);
       await fade.finished.catch(() => undefined);
     }
 
@@ -84,27 +97,36 @@ export default function FeaturedHome() {
     const cards = [...document.querySelectorAll<HTMLElement>('[data-featured-index]')];
     for (const [index, card] of cards.entries()) {
       const animation = card.animate(
-        [
-          { opacity: 1, transform: 'scale(1)' },
-          { opacity: 0, transform: 'scale(.96)' },
-        ],
+        reduce
+          ? [{ opacity: 1 }, { opacity: 0 }]
+          : [
+              { opacity: 1, transform: 'scale(1)' },
+              { opacity: 0, transform: 'scale(.96)' },
+            ],
         {
-          duration: reduce ? 1 : 220,
+          duration: reduce ? 180 : 220,
           delay: reduce ? 0 : Math.abs(index - featuredWorks.indexOf(selected)) * 18,
           fill: 'forwards',
         },
       );
-      animationsRef.current.push(animation);
+      cardAnimationsRef.current.push(animation);
+    }
+    if (reduce) {
+      const detailFade = panelRef.current?.animate([{ opacity: 0 }, { opacity: 1 }], {
+        duration: 180,
+        fill: 'forwards',
+        easing: 'linear',
+      });
+      if (detailFade) transientAnimationsRef.current.push(detailFade);
     }
     const timer = window.setTimeout(() => {
       if (active) dispatch({ type: 'grid-left' });
-    }, reduce ? 1 : 360);
+    }, reduce ? 180 : 360);
     return () => {
       active = false;
       window.clearTimeout(timer);
-      clearRuntime();
     };
-  }, [clearRuntime, selected, state.phase]);
+  }, [selected, state.phase]);
 
   useEffect(() => {
     if (
@@ -138,7 +160,7 @@ export default function FeaturedHome() {
           fill: 'both',
           easing: 'linear',
         });
-        animationsRef.current.push(animation);
+        transientAnimationsRef.current.push(animation);
       }
     }
     const timer = window.setTimeout(() => {
@@ -147,9 +169,38 @@ export default function FeaturedHome() {
     return () => {
       active = false;
       window.clearTimeout(timer);
-      clearRuntime();
+      clearCardAnimations();
+      clearTransientRuntime();
     };
-  }, [clearRuntime, selected, state.phase]);
+  }, [clearCardAnimations, clearTransientRuntime, selected, state.phase]);
+
+  useEffect(() => {
+    if (state.phase !== 'detail' || !selected) return;
+    const frame = requestAnimationFrame(() => closeButtonRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [selected, state.phase]);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    const nav = document.querySelector<HTMLElement>('.site-nav');
+    if (!selected || !grid || !nav) return;
+    const elements = [grid, nav];
+    const previous = elements.map((element) => ({
+      ariaHidden: element.getAttribute('aria-hidden'),
+      inert: element.inert,
+    }));
+    for (const element of elements) {
+      element.inert = true;
+      element.setAttribute('aria-hidden', 'true');
+    }
+    return () => {
+      elements.forEach((element, index) => {
+        element.inert = previous[index].inert;
+        if (previous[index].ariaHidden === null) element.removeAttribute('aria-hidden');
+        else element.setAttribute('aria-hidden', previous[index].ariaHidden);
+      });
+    };
+  }, [selected]);
 
   useEffect(() => {
     if (!selected) {
@@ -172,7 +223,7 @@ export default function FeaturedHome() {
 
   return (
     <div className="featured-home" data-detail-open={selected !== null}>
-      <section className="featured-grid" aria-label="推荐摄影作品">
+      <section ref={gridRef} className="featured-grid" aria-label="推荐摄影作品">
         {featuredWorks.map((work, index) => (
           <FeaturedCard key={work.id} work={work} index={index} onSelect={select} />
         ))}
@@ -184,6 +235,7 @@ export default function FeaturedHome() {
           phase={state.phase}
           panelRef={panelRef}
           imageRef={imageRef}
+          closeButtonRef={closeButtonRef}
           onClose={() => void close()}
         />
       )}
