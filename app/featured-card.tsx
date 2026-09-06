@@ -21,6 +21,8 @@ export default function FeaturedCard({
           <span>{work.displayTitle}</span>
         </span>
         <span className="featured-card__image">
+          {/* Native image geometry and local URL are shared with the GSAP mover layers. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={work.image}
             alt=""

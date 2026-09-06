@@ -1,49 +1,98 @@
-export type RectSnapshot = { left: number; top: number; width: number; height: number };
+export type RectSnapshot = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
 export type ImageSide = 'left' | 'right';
-export type RepeatingStep = {
-  index: number;
-  from: RectSnapshot;
-  to: RectSnapshot;
-  delay: number;
-  duration: number;
+export type ClipPathDirection =
+  | 'top-bottom'
+  | 'bottom-top'
+  | 'left-right'
+  | 'right-left';
+
+export const transitionConfig = {
+  steps: 6,
+  stepDuration: 0.35,
+  stepInterval: 0.05,
+  moverPauseBeforeExit: 0.14,
+  clipPathDirection: 'top-bottom' as ClipPathDirection,
 };
-export type TransitionOptions = {
-  count?: number;
-  duration?: number;
-  interval?: number;
-  revealPause?: number;
-};
 
-const DEFAULTS = { count: 6, duration: 350, interval: 50, revealPause: 140 };
-
-export function getDetailImageSide(sourceCenterX: number, viewportWidth: number): ImageSide {
-  return sourceCenterX <= viewportWidth / 2 ? 'right' : 'left';
+export function getDetailImageSide(
+  sourceCenterX: number,
+  viewportWidth: number,
+): ImageSide {
+  return sourceCenterX < viewportWidth / 2 ? 'right' : 'left';
 }
 
-export function createRepeatingSteps(
-  from: RectSnapshot,
-  to: RectSnapshot,
-  options: TransitionOptions = {},
-): RepeatingStep[] {
-  const config = { ...DEFAULTS, ...options };
-  return Array.from({ length: config.count }, (_, index) => ({
-    index, from: { ...from }, to: { ...to }, delay: index * config.interval,
-    duration: config.duration,
-  }));
+export function getClipPathsForDirection(direction: ClipPathDirection) {
+  const reveal = 'inset(0% 0% 0% 0%)';
+  switch (direction) {
+    case 'bottom-top':
+      return {
+        from: 'inset(0% 0% 100% 0%)',
+        reveal,
+        hide: 'inset(100% 0% 0% 0%)',
+      };
+    case 'left-right':
+      return {
+        from: 'inset(0% 100% 0% 0%)',
+        reveal,
+        hide: 'inset(0% 0% 0% 100%)',
+      };
+    case 'right-left':
+      return {
+        from: 'inset(0% 0% 0% 100%)',
+        reveal,
+        hide: 'inset(0% 100% 0% 0%)',
+      };
+    default:
+      return {
+        from: 'inset(100% 0% 0% 0%)',
+        reveal,
+        hide: 'inset(0% 0% 100% 0%)',
+      };
+  }
 }
 
-export function getTransitionTotalMs(options: TransitionOptions = {}) {
-  const config = { ...DEFAULTS, ...options };
-  return config.duration + (config.count - 1) * config.interval + config.revealPause;
-}
+const center = (rect: RectSnapshot) => ({
+  x: rect.left + rect.width / 2,
+  y: rect.top + rect.height / 2,
+});
 
-export function createMoverKeyframes(step: RepeatingStep): Keyframe[] {
-  const frame = (rect: RectSnapshot) => ({
-    left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`,
+export function computeStaggerDelays(
+  clicked: RectSnapshot,
+  items: RectSnapshot[],
+): number[] {
+  const base = center(clicked);
+  const distances = items.map((rect) => {
+    const point = center(rect);
+    return Math.hypot(point.x - base.x, point.y - base.y);
   });
-  return [
-    { ...frame(step.from), opacity: 0, clipPath: 'inset(18% 18% 18% 18%)', offset: 0 },
-    { ...frame(step.from), opacity: 1, clipPath: 'inset(0% 0% 0% 0%)', offset: 0.18 },
-    { ...frame(step.to), opacity: 0, clipPath: 'inset(0% 0% 0% 0%)', offset: 1 },
-  ];
+  const max = Math.max(0, ...distances);
+  return distances.map((distance) => (max === 0 ? 0 : (distance / max) * 0.3));
+}
+
+export function generateMotionPath(
+  start: RectSnapshot,
+  end: RectSnapshot,
+  steps = 6,
+): RectSnapshot[] {
+  const fullSteps = steps + 2;
+  const startCenter = center(start);
+  const endCenter = center(end);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const path = Array.from({ length: fullSteps }, (_, index) => {
+    const t = index / (fullSteps - 1);
+    const width = lerp(start.width, end.width, t);
+    const height = lerp(start.height, end.height, t);
+    return {
+      left: lerp(startCenter.x, endCenter.x, t) - width / 2,
+      top: lerp(startCenter.y, endCenter.y, t) - height / 2,
+      width,
+      height,
+    };
+  });
+  return path.slice(1, -1);
 }

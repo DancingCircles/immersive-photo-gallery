@@ -9,21 +9,23 @@ export default function FeaturedDetail({
   phase,
   panelRef,
   imageRef,
+  copyRef,
   closeButtonRef,
   onClose,
 }: {
   work: FeaturedWork;
   imageSide: ImageSide;
   phase: FeaturedPhase;
-  panelRef: RefObject<HTMLElement | null>;
+  panelRef: RefObject<HTMLDialogElement | null>;
   imageRef: RefObject<HTMLImageElement | null>;
+  copyRef: RefObject<HTMLDivElement | null>;
   closeButtonRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }) {
   return (
-    <section
+    <dialog
       ref={panelRef}
-      role="dialog"
+      open
       aria-modal="true"
       className={`featured-detail image-${imageSide}`}
       data-phase={phase}
@@ -31,6 +33,8 @@ export default function FeaturedDetail({
       aria-label={`${work.photographer} — ${work.displayTitle}`}
     >
       <div className="featured-detail__media">
+        {/* Native image geometry and local URL are shared with the GSAP mover layers. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           ref={imageRef}
           src={work.image}
@@ -40,7 +44,7 @@ export default function FeaturedDetail({
           }}
         />
       </div>
-      <div className="featured-detail__copy">
+      <div ref={copyRef} className="featured-detail__copy">
         <p>{work.positionLabel}</p>
         <h1>{work.photographer}</h1>
         <p>{work.displayTitle}</p>
@@ -51,6 +55,6 @@ export default function FeaturedDetail({
           返回
         </button>
       </div>
-    </section>
+    </dialog>
   );
 }
