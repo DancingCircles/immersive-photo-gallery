@@ -4,9 +4,9 @@
 
 **Goal:** Replace the current spherical daily page at `/` with a 12-work photography grid whose cards open a full-screen detail through a Codrops-inspired repeating-image transition, while leaving `/gallery` behavior unchanged.
 
-**Architecture:** Keep the homepage as a client-side React feature composed from focused card, detail, and coordinator components. Put collection formatting, transition geometry, and transition state in framework-independent modules so Node tests cover the behavior; use the Web Animations API only as the DOM adapter that renders those tested values.
+**Architecture:** Keep the homepage as a client-side React feature composed from focused card, detail, and coordinator components. Put collection formatting, transition geometry, and transition state in framework-independent modules so Node tests cover the behavior; use GSAP timelines as the DOM adapter that renders the source-faithful sequence.
 
-**Tech Stack:** React 19, TypeScript 5.9, CSS, Web Animations API, Node test runner, Vinext/Vite
+**Tech Stack:** React 19, TypeScript 5.9, CSS, GSAP 3.12.7, Node test runner, Vinext/Vite
 
 **Spec:** `docs/superpowers/specs/2026-09-06-repeating-image-homepage-design.md`
 
@@ -17,8 +17,8 @@
 - Keep the page background `#ffffff` and use restrained black/gray typography.
 - Keep only photographer, work number/title, category, and year on cards and details.
 - Keep the small top “推荐 / 画廊” navigation and hide it while a detail is open.
-- Add no GSAP or other runtime dependency; animate with the Web Animations API.
-- Use six repeated image layers with 350ms duration, 50ms stagger, 140ms reveal pause, linear geometry, and no rotation or random wobble.
+- Use `gsap@3.12.7`, matching the reference source version; add no other runtime dependency.
+- Use six fixed intermediate image layers with 350ms enter, 140ms pause, 350ms exit, 50ms stagger, center/size linear geometry, and no rotation or random wobble.
 - Respect `prefers-reduced-motion: reduce` by replacing repeated layers with a direct crossfade.
 - Preserve focus, support `Escape`, lock background scrolling during details, and remove every temporary DOM layer after use.
 - Credit Codrops Repeating Image Transition and its MIT License; do not copy its sample images, fonts, or marketing copy.
@@ -44,6 +44,7 @@
 - Delete `lib/daily.ts` and `lib/daily.test.ts`: remove superseded sphere layout logic.
 - Delete `public/models/bertoia.glb` and `public/models/ATTRIBUTION.txt`: remove the unused chair and its dedicated attribution.
 - Create `THIRD_PARTY_NOTICES.md`: retain the Codrops copyright and MIT terms.
+- Modify `package.json` and `package-lock.json`: add the exact `gsap@3.12.7` runtime dependency.
 
 ---
 
@@ -575,6 +576,22 @@ git commit -m "feat(home): 新增重复影像作品浏览交互"
 
 ### Task 4: Visual system, responsive layout, and navigation visibility
 
+#### Approved source-faithful revision
+
+This revision supersedes conflicting Task 4 instructions below and the earlier Web Animations implementation in Tasks 2–3.
+
+- Add `gsap@3.12.7` to `package.json` and `package-lock.json`.
+- Refactor `lib/repeating-transition.ts` and its tests to match the reference functions: `getClipPathsForDirection`, Euclidean `computeStaggerDelays`, and `generateMotionPath` with `fullSteps = steps + 2` and `path.slice(1, -1)`.
+- Refactor `app/featured-home.tsx` to use GSAP timelines matching `js/index.js`: non-clicked grid items scale to `0.8` over `0.3s`; the clicked item keeps scale `1`, runs for `stepDuration * 2`, and clips to the configured `from` value; delays are normalized by spatial distance up to `0.3s`.
+- Each mover is fixed at one generated intermediate rectangle. Its delayed timeline enters from opacity `0.4` and `clipPaths.hide` to opacity `1` and `clipPaths.reveal` over `0.35s` with `sine.in`, pauses `0.14s`, then exits to `clipPaths.from` over `0.35s` with `sine`.
+- Reveal the destination image from `clipPaths.hide` to `clipPaths.reveal` over `0.7s` with `sine.inOut`, delayed `steps * stepInterval`; reveal detail copy from `y: 25` to `y: 0` and opacity `1` over `1s` with `expo` at the reference relative timeline position.
+- Close with the reference reset sequence: fade the panel, restore overlay/navigation, reset image clip, set grid items to opacity `0` and scale `0.8`, then restore them with the same distance delays using `expo`.
+- Keep the existing accessibility additions: transition lock, reduced-motion crossfade, dialog focus, inert background, Escape, focus restoration, scroll restoration, GSAP timeline kill, and mover removal.
+- Add a reference-style editorial header before the grid: four compact factual metadata blocks, a large `DAILY EDIT` title, and a short `SELECT A WORK TO VIEW` prompt. The blocks must derive from the real collection: `DAILY SELECTION`, `12 PHOTOGRAPHERS / 12 WORKS`, `PORTRAIT, STREET, LANDSCAPE, DOCUMENTARY`, and `2026 COLLECTION`.
+- Remove the gray card hover background. Hover must only reduce image opacity to `0.7` and may strengthen text color; it must not add a black border.
+- Files additionally modified by this revision: `package.json`, `package-lock.json`, `lib/repeating-transition.ts`, `lib/repeating-transition.test.ts`, `app/featured-home.tsx`, `app/featured-detail.tsx`, and `app/featured-card.tsx` when markup hooks are needed.
+- Tests must prove six intermediate positions exclude exact endpoints, preserve center/size interpolation, return the four source clip-path triplets, and normalize spatial grid delays to the `0.3s` maximum.
+
 **Files:**
 - Modify: `app/globals.css`
 
@@ -613,14 +630,13 @@ Also remove the mobile `.model-credit` and `.daily-fallback` declarations from t
 .featured-home { min-height: 100%; padding: 88px 28px 52px; background: #fff; }
 .featured-grid { width: min(1680px, 100%); margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 72px 28px; }
 .featured-card { min-width: 0; }
-.featured-card button { width: 100%; padding: 12px; border: 0; background: transparent; color: #171717; text-align: left; transition: background-color 180ms ease; }
-.featured-card button:hover { background: #f4f4f4; }
+.featured-card button { width: 100%; padding: 12px; border: 0; background: transparent; color: #171717; text-align: left; }
 .featured-card__head, .featured-card__meta { display: flex; justify-content: space-between; gap: 16px; font: 10px/1.25 monospace; letter-spacing: .01em; }
 .featured-card__head { margin-bottom: 14px; }
 .featured-card__meta { margin-top: 14px; color: #565656; }
 .featured-card__image { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #f2f2f2; }
-.featured-card__image img { width: 100%; height: 100%; display: block; object-fit: contain; transition: transform 420ms cubic-bezier(.2,.75,.25,1); }
-.featured-card button:hover img { transform: scale(1.025); }
+.featured-card__image img { width: 100%; height: 100%; display: block; object-fit: contain; transition: opacity 150ms cubic-bezier(.2,0,.2,1); }
+.featured-card button:hover img { opacity: .7; }
 .featured-home[data-detail-open='true'] + .site-nav { opacity: 0; pointer-events: none; }
 .site-nav { transition: opacity 180ms ease; }
 ```
@@ -663,7 +679,6 @@ Also remove the mobile `.model-credit` and `.daily-fallback` declarations from t
 
 @media (prefers-reduced-motion: reduce) {
   .featured-card__image img { transition: none; }
-  .featured-card button:hover img { transform: none; }
   .featured-mover { display: none; }
 }
 ```
