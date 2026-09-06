@@ -27,7 +27,7 @@ const lens = {
   uniforms: {
     tDiffuse: { value: null },
     distortion: { value: new THREE.Vector2() },
-    backgroundColor: { value: new THREE.Color(0xf4f4f0) },
+    backgroundColor: { value: new THREE.Color(0xffffff) },
   },
   vertexShader: `varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
   fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 distortion; uniform vec3 backgroundColor; varying vec2 vUv; const vec2 CENTER=vec2(.5); void main(){vec2 p=2.0*(vUv-.5); vec2 q=(.88+distortion*dot(p,p))*p; vec2 uv=q*.5+.5; vec3 color=backgroundColor; if(uv.x>=0.0&&uv.x<=1.0&&uv.y>=0.0&&uv.y<=1.0){color=texture2D(tDiffuse,uv).rgb;} float dist=distance(vUv,CENTER); color*=1.0-.045*smoothstep(.28,.72,dist); gl_FragColor=vec4(color,1.0);}`,

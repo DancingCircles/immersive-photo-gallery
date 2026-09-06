@@ -2,15 +2,15 @@ export type ThemeMode = 'light' | 'dark';
 
 const palettes = {
   light: {
-    surface: '#f4f4f0',
-    border: '#b8b8b1',
+    surface: '#ffffff',
+    border: '#bdbdbd',
     text: '#080808',
-    mediaSurface: '#e8e8e3',
+    mediaSurface: '#f2f2f2',
     fallbackText: '#333333',
-    pill: '#cecec7',
+    pill: '#d8d8d8',
     pillText: '#111111',
-    hoverOverlay: 'rgba(244, 244, 240, 0.68)',
-    hoverBorder: '#17191c',
+    hoverOverlay: 'rgba(255, 255, 255, 0.68)',
+    hoverBorder: '#bdbdbd',
   },
   dark: {
     surface: '#050505',

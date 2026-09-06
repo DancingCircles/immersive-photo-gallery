@@ -6,8 +6,11 @@ void test('day and night palettes invert the surface and text contrast', () => {
   const day = getThemePalette('light');
   const night = getThemePalette('dark');
 
-  assert.equal(day.surface, '#f4f4f0');
+  assert.equal(day.surface, '#ffffff');
   assert.equal(day.text, '#080808');
+  assert.equal(day.mediaSurface, '#f2f2f2');
+  assert.equal(day.pill, '#d8d8d8');
+  assert.equal(day.hoverBorder, day.border);
   assert.equal(night.surface, '#050505');
   assert.equal(night.text, '#f1f1ed');
 });

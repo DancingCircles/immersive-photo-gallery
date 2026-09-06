@@ -1,0 +1,10 @@
+Free 3d Model Wire Chair Harry Bertoia Knoll
+Author: DELTAHEDRA
+Source: https://sketchfab.com/3d-models/free-3d-model-wire-chair-harry-bertoia-knoll-d26a9f5cae5649acbb3b3bfa16cc2245
+Author page: https://sketchfab.com/deltahedra
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+
+The downloaded GLB is preserved. The application changes its display material
+to silver-white metal, normalizes its scale, and positions it in the gallery.
+This model's license is separate from the application code and photography.

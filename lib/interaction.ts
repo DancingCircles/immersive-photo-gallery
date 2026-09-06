@@ -12,3 +12,7 @@ export function isDragGesture(
 export function cameraDistanceForDrag(baseDistance: number) {
   return baseDistance + Math.min(0.65, baseDistance * 0.08);
 }
+
+export function chairYawAfterDrag(currentYaw: number, horizontalPixels: number) {
+  return currentYaw + horizontalPixels * 0.012;
+}
