@@ -9,6 +9,8 @@ const palettes = {
     fallbackText: '#333333',
     pill: '#cecec7',
     pillText: '#111111',
+    hoverOverlay: 'rgba(244, 244, 240, 0.68)',
+    hoverBorder: '#17191c',
   },
   dark: {
     surface: '#050505',
@@ -18,6 +20,8 @@ const palettes = {
     fallbackText: '#bdbdb8',
     pill: '#242424',
     pillText: '#e7e7e2',
+    hoverOverlay: 'rgba(5, 5, 5, 0.58)',
+    hoverBorder: '#f1f1ed',
   },
 } as const;
 

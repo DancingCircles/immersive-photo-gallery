@@ -17,6 +17,10 @@ import {
   distortionForViewport,
   type ViewMode,
 } from '@/lib/projection';
+import {
+  cameraDistanceForDrag,
+  isDragGesture,
+} from '@/lib/interaction';
 
 // These values and the radial mapping mirror the public production shader.
 const lens = {
@@ -27,6 +31,10 @@ const lens = {
   },
   vertexShader: `varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
   fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 distortion; uniform vec3 backgroundColor; varying vec2 vUv; const vec2 CENTER=vec2(.5); void main(){vec2 p=2.0*(vUv-.5); vec2 q=(.88+distortion*dot(p,p))*p; vec2 uv=q*.5+.5; vec3 color=backgroundColor; if(uv.x>=0.0&&uv.x<=1.0&&uv.y>=0.0&&uv.y<=1.0){color=texture2D(tDiffuse,uv).rgb;} float dist=distance(vUv,CENTER); color*=1.0-.045*smoothstep(.28,.72,dist); gl_FragColor=vec4(color,1.0);}`,
+};
+type CardSurface = {
+  material: THREE.MeshBasicMaterial;
+  repaint: (theme: ThemeMode, hovered: boolean) => void;
 };
 export default function Scene({
   items,
@@ -83,6 +91,9 @@ export default function Scene({
     let alive = true,
       raf = 0,
       down = false,
+      dragging = false,
+      pressX = 0,
+      pressY = 0,
       lastX = 0,
       lastY = 0,
       vx = 0,
@@ -90,17 +101,18 @@ export default function Scene({
       offsetX = 0,
       offsetY = 0,
       px = 0,
-      py = 0;
+      py = 0,
+      baseCameraZ = camera.position.z;
     const materials: THREE.Material[] = [],
       textures: THREE.Texture[] = [],
-      repaintCards: Array<(value: ThemeMode) => void> = [];
+      cardSurfaces: CardSurface[] = [];
     const width = GRID_CELL_WIDTH,
       height = GRID_CELL_HEIGHT,
       cols = 8,
       rows = 6,
       geometry = new THREE.PlaneGeometry(width - 0.012, height - 0.012);
-    // Metadata and image share a canvas texture and therefore the same warp.
-    const cardMaterials = items.map((p) => {
+    // Each repeating tile owns its texture so only the hovered position changes.
+    const createCardSurface = (p: Project): CardSurface => {
       const canvas = document.createElement('canvas');
       canvas.width = 640;
       canvas.height = 740;
@@ -112,12 +124,28 @@ export default function Scene({
       texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
       textures.push(texture);
       let loadedImage: HTMLImageElement | undefined;
-      const paint = (activeTheme: ThemeMode, img = loadedImage) => {
+      const paint = (
+        activeTheme: ThemeMode,
+        hovered: boolean,
+        img = loadedImage,
+      ) => {
         const palette = getThemePalette(activeTheme);
         ctx.fillStyle = palette.surface;
         ctx.fillRect(0, 0, 640, 740);
-        ctx.strokeStyle = palette.border;
-        ctx.lineWidth = 2;
+        if (hovered && img) {
+          const scale = Math.max(640 / img.width, 740 / img.height) * 1.2;
+          const w = img.width * scale;
+          const h = img.height * scale;
+          ctx.save();
+          ctx.globalAlpha = 0.56;
+          ctx.filter = 'blur(24px) saturate(1.35)';
+          ctx.drawImage(img, 320 - w / 2, 370 - h / 2, w, h);
+          ctx.restore();
+          ctx.fillStyle = palette.hoverOverlay;
+          ctx.fillRect(0, 0, 640, 740);
+        }
+        ctx.strokeStyle = hovered ? palette.hoverBorder : palette.border;
+        ctx.lineWidth = hovered ? 5 : 2;
         ctx.strokeRect(1, 1, 638, 738);
         ctx.fillStyle = palette.text;
         ctx.font = '700 24px Arial';
@@ -150,36 +178,45 @@ export default function Scene({
         ctx.textAlign = 'left';
         texture.needsUpdate = true;
       };
-      paint(themeRef.current);
-      repaintCards.push((value) => paint(value));
+      paint(themeRef.current, false);
+      const material = new THREE.MeshBasicMaterial({ map: texture });
+      materials.push(material);
+      const surface: CardSurface = {
+        material,
+        repaint: (activeTheme, hovered) => paint(activeTheme, hovered),
+      };
       const img = new Image();
       img.onload = () => {
         loadedImage = img;
-        if (alive) paint(themeRef.current, img);
+        if (alive)
+          surface.repaint(themeRef.current, surface === hoveredSurface);
       };
       img.src = p.image;
-      const material = new THREE.MeshBasicMaterial({ map: texture });
-      materials.push(material);
-      return material;
-    });
+      return surface;
+    };
+    let hoveredSurface: CardSurface | null = null;
     const applyTheme = (value: ThemeMode) => {
       const palette = getThemePalette(value);
       renderer.setClearColor(palette.surface);
       warp.uniforms.backgroundColor.value.set(palette.surface);
-      repaintCards.forEach((repaint) => repaint(value));
+      cardSurfaces.forEach((surface) =>
+        surface.repaint(value, surface === hoveredSurface),
+      );
     };
     applyThemeRef.current = applyTheme;
     applyTheme(themeRef.current);
     const tiles: THREE.Mesh[] = [];
     for (let row = 0; row < rows; row++)
       for (let col = 0; col < cols; col++) {
-        const mesh = new THREE.Mesh(
-          geometry,
-          cardMaterials[(row * cols + col) % items.length],
+        const surface = createCardSurface(
+          items[(row * cols + col) % items.length],
         );
+        cardSurfaces.push(surface);
+        const mesh = new THREE.Mesh(geometry, surface.material);
         mesh.userData = {
           x: (col - cols / 2 + 0.5) * width,
           y: (row - rows / 2 + 0.5) * height,
+          surface,
         };
         scene.add(mesh);
         tiles.push(mesh);
@@ -190,7 +227,8 @@ export default function Scene({
       renderer.setSize(w, h);
       composer.setSize(w, h);
       camera.aspect = w / h;
-      camera.position.z = cameraDistanceForAspect(camera.aspect);
+      baseCameraZ = cameraDistanceForAspect(camera.aspect);
+      if (!dragging) camera.position.z = baseCameraZ;
       camera.updateProjectionMatrix();
     };
     resize();
@@ -201,6 +239,9 @@ export default function Scene({
     const pointerDown = (e: PointerEvent) => {
       if (e.button !== 0) return;
       down = true;
+      dragging = false;
+      pressX = e.clientX;
+      pressY = e.clientY;
       lastX = e.clientX;
       lastY = e.clientY;
       vx = vy = 0;
@@ -211,6 +252,7 @@ export default function Scene({
       px = e.clientX / innerWidth - 0.5;
       py = e.clientY / innerHeight - 0.5;
       if (!down) return;
+      dragging ||= isDragGesture(pressX, pressY, e.clientX, e.clientY);
       const scale =
           (2 *
             Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) *
@@ -227,6 +269,7 @@ export default function Scene({
     };
     const pointerUp = () => {
       down = false;
+      dragging = false;
       element.classList.remove('dragging');
       if (reduced) vx = vy = 0;
     };
@@ -273,6 +316,12 @@ export default function Scene({
       raf = requestAnimationFrame(frame);
       const dt = Math.min((now - previous) / 1000, 0.05);
       previous = now;
+      const targetCameraZ =
+        dragging && !reduced
+          ? cameraDistanceForDrag(baseCameraZ)
+          : baseCameraZ;
+      camera.position.z +=
+        (targetCameraZ - camera.position.z) * (1 - Math.exp(-10 * dt));
       if (!down && !reduced) {
         offsetX += vx * dt * 60;
         offsetY += vy * dt * 60;
@@ -319,9 +368,15 @@ export default function Scene({
       const hovered = down
         ? null
         : raycaster.intersectObjects(tiles)[0]?.object;
+      const nextSurface = hovered?.userData.surface as CardSurface | undefined;
+      if (nextSurface !== hoveredSurface) {
+        hoveredSurface?.repaint(themeRef.current, false);
+        nextSurface?.repaint(themeRef.current, true);
+        hoveredSurface = nextSurface ?? null;
+      }
       for (const tile of tiles) {
         tile.position.z +=
-          ((tile === hovered ? 0.1 * depth : 0) - tile.position.z) *
+          ((tile === hovered ? 0.06 + 0.06 * depth : 0) - tile.position.z) *
           (reduced ? 1 : 0.12);
       }
       composer.render();
