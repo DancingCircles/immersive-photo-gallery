@@ -1,13 +1,18 @@
 'use client';
 // This canvas region deliberately accepts keyboard focus for arrow navigation.
 /* eslint-disable jsx-a11y/no-noninteractive-tabindex */
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import type { Project } from '@/lib/projects';
+import {
+  isGalleryTileExtracted,
+  projectedCornersToScreenRect,
+  type GallerySelection,
+} from '@/lib/gallery-detail';
 import { getThemePalette, type ThemeMode } from '@/lib/theme';
 import {
   GRID_CELL_HEIGHT,
@@ -33,23 +38,33 @@ const lens = {
   fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 distortion; uniform vec3 backgroundColor; varying vec2 vUv; const vec2 CENTER=vec2(.5); void main(){vec2 p=2.0*(vUv-.5); vec2 q=(.88+distortion*dot(p,p))*p; vec2 uv=q*.5+.5; vec3 color=backgroundColor; if(uv.x>=0.0&&uv.x<=1.0&&uv.y>=0.0&&uv.y<=1.0){color=texture2D(tDiffuse,uv).rgb;} float dist=distance(vUv,CENTER); color*=1.0-.045*smoothstep(.28,.72,dist); gl_FragColor=vec4(color,1.0);}`,
 };
 type CardSurface = {
+  tileIndex: number;
   material: THREE.MeshBasicMaterial;
-  repaint: (theme: ThemeMode, hovered: boolean) => void;
+  repaint: (theme: ThemeMode, hovered: boolean, extracted: boolean) => void;
 };
 export default function Scene({
   items,
   mode,
   theme,
+  paused = false,
+  selectedTileIndex = null,
+  onSelect,
   onError,
 }: {
   items: Project[];
   mode: ViewMode;
   theme: ThemeMode;
+  paused?: boolean;
+  selectedTileIndex?: number | null;
+  onSelect?: (selection: GallerySelection) => void;
   onError: () => void;
 }) {
   const host = useRef<HTMLElement>(null),
     modeRef = useRef(mode),
     themeRef = useRef(theme),
+    pausedRef = useRef(paused),
+    selectedTileRef = useRef(selectedTileIndex),
+    selectRef = useRef(onSelect),
     applyThemeRef = useRef<((value: ThemeMode) => void) | null>(null),
     fail = useRef(onError);
   useEffect(() => {
@@ -59,6 +74,16 @@ export default function Scene({
     themeRef.current = theme;
     applyThemeRef.current?.(theme);
   }, [theme]);
+  useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+  useLayoutEffect(() => {
+    selectedTileRef.current = selectedTileIndex;
+    applyThemeRef.current?.(themeRef.current);
+  }, [selectedTileIndex]);
+  useEffect(() => {
+    selectRef.current = onSelect;
+  }, [onSelect]);
   useEffect(() => {
     fail.current = onError;
   }, [onError]);
@@ -102,7 +127,11 @@ export default function Scene({
       offsetY = 0,
       px = 0,
       py = 0,
-      baseCameraZ = camera.position.z;
+      baseCameraZ = camera.position.z,
+      distortionCurrent = initialDistortion,
+      distortionFrom = initialDistortion,
+      distortionTarget = initialDistortion,
+      distortionStartedAt = performance.now();
     const materials: THREE.Material[] = [],
       textures: THREE.Texture[] = [],
       cardSurfaces: CardSurface[] = [];
@@ -112,7 +141,7 @@ export default function Scene({
       rows = 6,
       geometry = new THREE.PlaneGeometry(width - 0.012, height - 0.012);
     // Each repeating tile owns its texture so only the hovered position changes.
-    const createCardSurface = (p: Project): CardSurface => {
+    const createCardSurface = (p: Project, tileIndex: number): CardSurface => {
       const canvas = document.createElement('canvas');
       canvas.width = 640;
       canvas.height = 740;
@@ -127,12 +156,13 @@ export default function Scene({
       const paint = (
         activeTheme: ThemeMode,
         hovered: boolean,
+        extracted: boolean,
         img = loadedImage,
       ) => {
         const palette = getThemePalette(activeTheme);
         ctx.fillStyle = palette.surface;
         ctx.fillRect(0, 0, 640, 740);
-        if (hovered && img) {
+        if (hovered && img && !extracted) {
           const scale = Math.max(640 / img.width, 740 / img.height) * 1.2;
           const w = img.width * scale;
           const h = img.height * scale;
@@ -154,9 +184,9 @@ export default function Scene({
         ctx.textAlign = 'right';
         ctx.fillText(p.title.toUpperCase().slice(0, 25), 616, 42);
         ctx.textAlign = 'left';
-        ctx.fillStyle = palette.mediaSurface;
+        ctx.fillStyle = extracted ? palette.surface : palette.mediaSurface;
         ctx.fillRect(90, 118, 460, 480);
-        if (img) {
+        if (img && !extracted) {
           const scale = Math.min(460 / img.width, 480 / img.height),
             w = img.width * scale,
             h = img.height * scale;
@@ -178,18 +208,24 @@ export default function Scene({
         ctx.textAlign = 'left';
         texture.needsUpdate = true;
       };
-      paint(themeRef.current, false);
+      paint(themeRef.current, false, false);
       const material = new THREE.MeshBasicMaterial({ map: texture });
       materials.push(material);
       const surface: CardSurface = {
+        tileIndex,
         material,
-        repaint: (activeTheme, hovered) => paint(activeTheme, hovered),
+        repaint: (activeTheme, hovered, extracted) =>
+          paint(activeTheme, hovered, extracted),
       };
       const img = new Image();
       img.onload = () => {
         loadedImage = img;
         if (alive)
-          surface.repaint(themeRef.current, surface === hoveredSurface);
+          surface.repaint(
+            themeRef.current,
+            surface === hoveredSurface,
+            isGalleryTileExtracted(surface.tileIndex, selectedTileRef.current),
+          );
       };
       img.src = p.image;
       return surface;
@@ -200,7 +236,11 @@ export default function Scene({
       renderer.setClearColor(palette.surface);
       warp.uniforms.backgroundColor.value.set(palette.surface);
       cardSurfaces.forEach((surface) =>
-        surface.repaint(value, surface === hoveredSurface),
+        surface.repaint(
+          value,
+          surface === hoveredSurface,
+          isGalleryTileExtracted(surface.tileIndex, selectedTileRef.current),
+        ),
       );
     };
     applyThemeRef.current = applyTheme;
@@ -208,8 +248,10 @@ export default function Scene({
     const tiles: THREE.Mesh[] = [];
     for (let row = 0; row < rows; row++)
       for (let col = 0; col < cols; col++) {
+        const tileIndex = row * cols + col;
         const surface = createCardSurface(
-          items[(row * cols + col) % items.length],
+          items[tileIndex % items.length],
+          tileIndex,
         );
         cardSurfaces.push(surface);
         const mesh = new THREE.Mesh(geometry, surface.material);
@@ -217,6 +259,8 @@ export default function Scene({
           x: (col - cols / 2 + 0.5) * width,
           y: (row - rows / 2 + 0.5) * height,
           surface,
+          project: items[(row * cols + col) % items.length],
+          tileIndex,
         };
         scene.add(mesh);
         tiles.push(mesh);
@@ -234,10 +278,42 @@ export default function Scene({
     resize();
     const observer = new ResizeObserver(resize);
     observer.observe(element);
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const updatePointer = (clientX: number, clientY: number) => {
+      const rect = element.getBoundingClientRect();
+      px = (clientX - rect.left) / rect.width - 0.5;
+      py = (clientY - rect.top) / rect.height - 0.5;
+      const x = px * 2;
+      const y = -py * 2;
+      const radialScale =
+        GALLERY_BASE_SCALE + distortionCurrent * (x * x + y * y);
+      pointer.set(x * radialScale, y * radialScale);
+    };
+    const meshScreenRect = (mesh: THREE.Mesh) => {
+      const halfWidth = (width - 0.012) / 2;
+      const halfHeight = (height - 0.012) / 2;
+      const corners = [
+        new THREE.Vector3(-halfWidth, halfHeight, 0),
+        new THREE.Vector3(halfWidth, halfHeight, 0),
+        new THREE.Vector3(halfWidth, -halfHeight, 0),
+        new THREE.Vector3(-halfWidth, -halfHeight, 0),
+      ];
+      scene.updateMatrixWorld();
+      camera.updateMatrixWorld();
+      return projectedCornersToScreenRect(
+        corners.map((corner) => {
+          const projected = corner.applyMatrix4(mesh.matrixWorld).project(camera);
+          return [projected.x, projected.y] as const;
+        }),
+        { width: element.clientWidth, height: element.clientHeight },
+        distortionCurrent,
+      );
+    };
     const wrap = (n: number, span: number) =>
       ((((n + span / 2) % span) + span) % span) - span / 2;
     const pointerDown = (e: PointerEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || pausedRef.current) return;
       down = true;
       dragging = false;
       pressX = e.clientX;
@@ -249,8 +325,7 @@ export default function Scene({
       element.classList.add('dragging');
     };
     const pointerMove = (e: PointerEvent) => {
-      px = e.clientX / innerWidth - 0.5;
-      py = e.clientY / innerHeight - 0.5;
+      updatePointer(e.clientX, e.clientY);
       if (!down) return;
       dragging ||= isDragGesture(pressX, pressY, e.clientX, e.clientY);
       const scale =
@@ -267,13 +342,34 @@ export default function Scene({
       lastX = e.clientX;
       lastY = e.clientY;
     };
-    const pointerUp = () => {
+    const resetPointer = () => {
       down = false;
       dragging = false;
       element.classList.remove('dragging');
       if (reduced) vx = vy = 0;
     };
+    const pointerUp = (e: PointerEvent) => {
+      const wasDragging = dragging;
+      resetPointer();
+      if (wasDragging || pausedRef.current || !selectRef.current) return;
+      updatePointer(e.clientX, e.clientY);
+      scene.updateMatrixWorld();
+      camera.updateMatrixWorld();
+      raycaster.setFromCamera(pointer, camera);
+      const mesh = raycaster.intersectObjects(tiles)[0]?.object as
+        | THREE.Mesh
+        | undefined;
+      const project = mesh?.userData.project as Project | undefined;
+      if (!mesh || !project) return;
+      vx = vy = 0;
+      selectRef.current({
+        projectId: project.id,
+        tileIndex: mesh.userData.tileIndex as number,
+        sourceRect: meshScreenRect(mesh),
+      });
+    };
     const wheel = (e: WheelEvent) => {
+      if (pausedRef.current) return;
       e.preventDefault();
       const unit =
         e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? element.clientHeight : 1;
@@ -283,6 +379,7 @@ export default function Scene({
       offsetY += vy;
     };
     const key = (e: KeyboardEvent) => {
+      if (pausedRef.current) return;
       const d = 0.35;
       if (e.key.startsWith('Arrow')) e.preventDefault();
       if (e.key === 'ArrowLeft') offsetX += d;
@@ -292,12 +389,41 @@ export default function Scene({
       if (e.key === 'Home') {
         offsetX = offsetY = vx = vy = 0;
       }
+      if ((e.key === 'Enter' || e.key === ' ') && selectRef.current) {
+        e.preventDefault();
+        scene.updateMatrixWorld();
+        camera.updateMatrixWorld();
+        const center = new THREE.Vector3();
+        const mesh = tiles.reduce<THREE.Mesh | null>((closest, tile) => {
+          const point = center
+            .setFromMatrixPosition(tile.matrixWorld)
+            .project(camera);
+          if (Math.abs(point.x) > 1.1 || Math.abs(point.y) > 1.1) return closest;
+          if (!closest) return tile;
+          const closestPoint = new THREE.Vector3()
+            .setFromMatrixPosition(closest.matrixWorld)
+            .project(camera);
+          return point.x * point.x + point.y * point.y <
+            closestPoint.x * closestPoint.x + closestPoint.y * closestPoint.y
+            ? tile
+            : closest;
+        }, null);
+        const project = mesh?.userData.project as Project | undefined;
+        if (mesh && project) {
+          vx = vy = 0;
+          selectRef.current({
+            projectId: project.id,
+            tileIndex: mesh.userData.tileIndex as number,
+            sourceRect: meshScreenRect(mesh),
+          });
+        }
+      }
     };
     element.addEventListener('pointerdown', pointerDown);
     element.addEventListener('pointermove', pointerMove);
     element.addEventListener('pointerup', pointerUp);
-    element.addEventListener('pointercancel', pointerUp);
-    element.addEventListener('lostpointercapture', pointerUp);
+    element.addEventListener('pointercancel', resetPointer);
+    element.addEventListener('lostpointercapture', resetPointer);
     element.addEventListener('wheel', wheel, { passive: false });
     element.addEventListener('keydown', key);
     const lost = (e: Event) => {
@@ -305,13 +431,7 @@ export default function Scene({
       fail.current();
     };
     renderer.domElement.addEventListener('webglcontextlost', lost);
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    let previous = performance.now(),
-      distortionCurrent = initialDistortion,
-      distortionFrom = initialDistortion,
-      distortionTarget = initialDistortion,
-      distortionStartedAt = previous;
+    let previous = performance.now();
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       const dt = Math.min((now - previous) / 1000, 0.05);
@@ -322,7 +442,7 @@ export default function Scene({
           : baseCameraZ;
       camera.position.z +=
         (targetCameraZ - camera.position.z) * (1 - Math.exp(-10 * dt));
-      if (!down && !reduced) {
+      if (!pausedRef.current && !down && !reduced) {
         offsetX += vx * dt * 60;
         offsetY += vy * dt * 60;
         vx *= Math.exp(-5 * dt);
@@ -365,13 +485,29 @@ export default function Scene({
       scene.updateMatrixWorld();
       camera.updateMatrixWorld();
       raycaster.setFromCamera(pointer, camera);
-      const hovered = down
+      const hovered = pausedRef.current || down
         ? null
         : raycaster.intersectObjects(tiles)[0]?.object;
       const nextSurface = hovered?.userData.surface as CardSurface | undefined;
       if (nextSurface !== hoveredSurface) {
-        hoveredSurface?.repaint(themeRef.current, false);
-        nextSurface?.repaint(themeRef.current, true);
+        if (hoveredSurface)
+          hoveredSurface.repaint(
+            themeRef.current,
+            false,
+            isGalleryTileExtracted(
+              hoveredSurface.tileIndex,
+              selectedTileRef.current,
+            ),
+          );
+        if (nextSurface)
+          nextSurface.repaint(
+            themeRef.current,
+            true,
+            isGalleryTileExtracted(
+              nextSurface.tileIndex,
+              selectedTileRef.current,
+            ),
+          );
         hoveredSurface = nextSurface ?? null;
       }
       for (const tile of tiles) {
@@ -390,8 +526,8 @@ export default function Scene({
       element.removeEventListener('pointerdown', pointerDown);
       element.removeEventListener('pointermove', pointerMove);
       element.removeEventListener('pointerup', pointerUp);
-      element.removeEventListener('pointercancel', pointerUp);
-      element.removeEventListener('lostpointercapture', pointerUp);
+      element.removeEventListener('pointercancel', resetPointer);
+      element.removeEventListener('lostpointercapture', resetPointer);
       element.removeEventListener('wheel', wheel);
       element.removeEventListener('keydown', key);
       renderer.domElement.removeEventListener('webglcontextlost', lost);
@@ -410,7 +546,7 @@ export default function Scene({
       className="scene"
       ref={host}
       tabIndex={0}
-      aria-label={`${mode === 'space' ? '球体内部 3D' : '平铺'}作品墙。拖拽、滚轮或方向键浏览，Home 键重置。`}
+      aria-label={`${mode === 'space' ? '球体内部 3D' : '平铺'}作品墙。拖拽、滚轮或方向键浏览，Enter 键打开中心作品，Home 键重置。`}
     />
   );
 }
