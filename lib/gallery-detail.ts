@@ -47,6 +47,12 @@ export function isGalleryTileExtracted(
   return selectedTileIndex !== null && tileIndex === selectedTileIndex;
 }
 
+export function firstVisibleRaycastHit<
+  T extends { object: { visible: boolean } },
+>(hits: readonly T[]) {
+  return hits.find(({ object }) => object.visible);
+}
+
 export function galleryFlightStartTransform(
   source: ScreenRect,
   destination: ScreenRect,

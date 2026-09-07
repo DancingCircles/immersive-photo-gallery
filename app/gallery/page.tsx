@@ -4,12 +4,12 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useReducer,
   useRef,
   useState,
 } from 'react';
 import { gsap } from 'gsap';
-import { Grid2X2, List } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   galleryCardMediaRect,
@@ -18,7 +18,7 @@ import {
   initialGalleryDetailState,
   type GallerySelection,
 } from '@/lib/gallery-detail';
-import { projects } from '@/lib/projects';
+import { filterProjects, projects } from '@/lib/projects';
 import type { ViewMode } from '@/lib/projection';
 import GalleryDetail from '../gallery-detail';
 import Scene from '../scene';
@@ -29,6 +29,7 @@ const DETAIL_CLOSE_DURATION = 0.26;
 
 export default function Gallery() {
   const [mode, setMode] = useState<ViewMode>('space');
+  const [query, setQuery] = useState('');
   const [state, dispatch] = useReducer(
     galleryDetailReducer,
     initialGalleryDetailState,
@@ -44,6 +45,10 @@ export default function Gallery() {
   const selected = state.selection
     ? (projects.find(({ id }) => id === state.selection?.projectId) ?? null)
     : null;
+  const visibleProjectIds = useMemo(
+    () => filterProjects(projects, query).map(({ id }) => id),
+    [query],
+  );
 
   useEffect(() => {
     const init = requestAnimationFrame(() => {
@@ -206,6 +211,7 @@ export default function Gallery() {
       <div ref={sceneRef} className="space-view gallery-scene-view">
         <Scene
           items={projects}
+          visibleProjectIds={visibleProjectIds}
           mode={mode}
           theme="light"
           paused={state.phase !== 'idle'}
@@ -218,19 +224,31 @@ export default function Gallery() {
           onError={() => setMode('flat')}
         />
       </div>
-      <SiteNav current="gallery" />
+      <SiteNav
+        current="gallery"
+        searchValue={query}
+        onSearchChange={setQuery}
+      />
+      {query.trim() && visibleProjectIds.length === 0 && (
+        <output className="gallery-empty-results">
+          NO WORKS FOUND / 未找到作品
+        </output>
+      )}
       <footer className="controls">
         <Tabs
           value={mode}
           onValueChange={(value) => setMode(value as ViewMode)}
         >
-          <TabsList className="view-tabs" aria-label="选择视角">
+          <TabsList
+            className="view-tabs"
+            variant="line"
+            aria-label="选择视角"
+          >
             <TabsTrigger value="space" aria-label="3D 空间视角">
-              <Grid2X2 /> <span>3D</span>
+              3D VIEW
             </TabsTrigger>
             <TabsTrigger value="flat" aria-label="平铺视角">
-              <List />
-              <span>Flat</span>
+              FLAT VIEW
             </TabsTrigger>
           </TabsList>
         </Tabs>

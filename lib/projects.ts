@@ -7,12 +7,21 @@ export type Project = {
   image: string;
 };
 
-const categories = [
-  'portrait',
-  'street',
-  'landscape',
-  'documentary',
-] as const;
+export function filterProjects(items: readonly Project[], query: string) {
+  const term = query.trim().toLocaleLowerCase();
+  if (!term) return [...items];
+
+  return items.filter((project) =>
+    [
+      project.title,
+      project.photographer,
+      project.category,
+      project.publishedAt,
+    ].some((value) => value.toLocaleLowerCase().includes(term)),
+  );
+}
+
+const categories = ['portrait', 'street', 'landscape', 'documentary'] as const;
 
 // Replace these placeholders with credited, licensed photography before release.
 export const projects: Project[] = Array.from({ length: 16 }, (_, index) => ({

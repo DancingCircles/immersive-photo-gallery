@@ -9,6 +9,7 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import type { Project } from '@/lib/projects';
 import {
+  firstVisibleRaycastHit,
   isGalleryTileExtracted,
   projectedCornersToScreenRect,
   type GallerySelection,
@@ -22,10 +23,7 @@ import {
   distortionForViewport,
   type ViewMode,
 } from '@/lib/projection';
-import {
-  cameraDistanceForDrag,
-  isDragGesture,
-} from '@/lib/interaction';
+import { cameraDistanceForDrag, isDragGesture } from '@/lib/interaction';
 
 // These values and the radial mapping mirror the public production shader.
 const lens = {
@@ -48,6 +46,7 @@ export default function Scene({
   theme,
   paused = false,
   selectedTileIndex = null,
+  visibleProjectIds,
   onSelect,
   onError,
 }: {
@@ -56,6 +55,7 @@ export default function Scene({
   theme: ThemeMode;
   paused?: boolean;
   selectedTileIndex?: number | null;
+  visibleProjectIds?: readonly number[];
   onSelect?: (selection: GallerySelection) => void;
   onError: () => void;
 }) {
@@ -64,8 +64,14 @@ export default function Scene({
     themeRef = useRef(theme),
     pausedRef = useRef(paused),
     selectedTileRef = useRef(selectedTileIndex),
+    visibleProjectIdsRef = useRef<readonly number[] | undefined>(
+      visibleProjectIds,
+    ),
     selectRef = useRef(onSelect),
     applyThemeRef = useRef<((value: ThemeMode) => void) | null>(null),
+    applyVisibilityRef = useRef<
+      ((projectIds: readonly number[] | undefined) => void) | null
+    >(null),
     fail = useRef(onError);
   useEffect(() => {
     modeRef.current = mode;
@@ -81,6 +87,10 @@ export default function Scene({
     selectedTileRef.current = selectedTileIndex;
     applyThemeRef.current?.(themeRef.current);
   }, [selectedTileIndex]);
+  useLayoutEffect(() => {
+    visibleProjectIdsRef.current = visibleProjectIds;
+    applyVisibilityRef.current?.(visibleProjectIds);
+  }, [visibleProjectIds]);
   useEffect(() => {
     selectRef.current = onSelect;
   }, [onSelect]);
@@ -265,6 +275,15 @@ export default function Scene({
         scene.add(mesh);
         tiles.push(mesh);
       }
+    const applyVisibility = (projectIds: readonly number[] | undefined) => {
+      const visibleIds = projectIds ? new Set(projectIds) : null;
+      tiles.forEach((tile) => {
+        const project = tile.userData.project as Project;
+        tile.visible = visibleIds ? visibleIds.has(project.id) : true;
+      });
+    };
+    applyVisibilityRef.current = applyVisibility;
+    applyVisibility(visibleProjectIdsRef.current);
     const resize = () => {
       const w = element.clientWidth,
         h = element.clientHeight;
@@ -303,7 +322,9 @@ export default function Scene({
       camera.updateMatrixWorld();
       return projectedCornersToScreenRect(
         corners.map((corner) => {
-          const projected = corner.applyMatrix4(mesh.matrixWorld).project(camera);
+          const projected = corner
+            .applyMatrix4(mesh.matrixWorld)
+            .project(camera);
           return [projected.x, projected.y] as const;
         }),
         { width: element.clientWidth, height: element.clientHeight },
@@ -356,7 +377,9 @@ export default function Scene({
       scene.updateMatrixWorld();
       camera.updateMatrixWorld();
       raycaster.setFromCamera(pointer, camera);
-      const mesh = raycaster.intersectObjects(tiles)[0]?.object as
+      const mesh = firstVisibleRaycastHit(
+        raycaster.intersectObjects(tiles),
+      )?.object as
         | THREE.Mesh
         | undefined;
       const project = mesh?.userData.project as Project | undefined;
@@ -395,10 +418,12 @@ export default function Scene({
         camera.updateMatrixWorld();
         const center = new THREE.Vector3();
         const mesh = tiles.reduce<THREE.Mesh | null>((closest, tile) => {
+          if (!tile.visible) return closest;
           const point = center
             .setFromMatrixPosition(tile.matrixWorld)
             .project(camera);
-          if (Math.abs(point.x) > 1.1 || Math.abs(point.y) > 1.1) return closest;
+          if (Math.abs(point.x) > 1.1 || Math.abs(point.y) > 1.1)
+            return closest;
           if (!closest) return tile;
           const closestPoint = new THREE.Vector3()
             .setFromMatrixPosition(closest.matrixWorld)
@@ -437,9 +462,7 @@ export default function Scene({
       const dt = Math.min((now - previous) / 1000, 0.05);
       previous = now;
       const targetCameraZ =
-        dragging && !reduced
-          ? cameraDistanceForDrag(baseCameraZ)
-          : baseCameraZ;
+        dragging && !reduced ? cameraDistanceForDrag(baseCameraZ) : baseCameraZ;
       camera.position.z +=
         (targetCameraZ - camera.position.z) * (1 - Math.exp(-10 * dt));
       if (!pausedRef.current && !down && !reduced) {
@@ -479,15 +502,15 @@ export default function Scene({
       // Ray picking uses the same UV deformation as the postprocessing shader.
       const x = px * 2,
         y = -py * 2,
-        radialScale =
-          GALLERY_BASE_SCALE + distortionCurrent * (x * x + y * y);
+        radialScale = GALLERY_BASE_SCALE + distortionCurrent * (x * x + y * y);
       pointer.set(x * radialScale, y * radialScale);
       scene.updateMatrixWorld();
       camera.updateMatrixWorld();
       raycaster.setFromCamera(pointer, camera);
-      const hovered = pausedRef.current || down
-        ? null
-        : raycaster.intersectObjects(tiles)[0]?.object;
+      const hovered =
+        pausedRef.current || down
+          ? null
+          : firstVisibleRaycastHit(raycaster.intersectObjects(tiles))?.object;
       const nextSurface = hovered?.userData.surface as CardSurface | undefined;
       if (nextSurface !== hoveredSurface) {
         if (hoveredSurface)
@@ -521,6 +544,7 @@ export default function Scene({
     return () => {
       alive = false;
       applyThemeRef.current = null;
+      applyVisibilityRef.current = null;
       cancelAnimationFrame(raf);
       observer.disconnect();
       element.removeEventListener('pointerdown', pointerDown);

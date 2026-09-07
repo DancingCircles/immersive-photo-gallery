@@ -5,6 +5,7 @@ import {
   galleryDetailReducer,
   galleryFlightStartTransform,
   initialGalleryDetailState,
+  firstVisibleRaycastHit,
   isGalleryTileExtracted,
   projectedCornersToScreenRect,
 } from './gallery-detail.ts';
@@ -48,6 +49,14 @@ void test('only the selected repeated tile gives up its image', () => {
   assert.equal(isGalleryTileExtracted(11, 11), true);
   assert.equal(isGalleryTileExtracted(3, 11), false);
   assert.equal(isGalleryTileExtracted(11, null), false);
+});
+
+void test('raycast selection skips cards hidden by search', () => {
+  const hidden = { object: { visible: false }, id: 'hidden' };
+  const visible = { object: { visible: true }, id: 'visible' };
+
+  assert.equal(firstVisibleRaycastHit([hidden, visible]), visible);
+  assert.equal(firstVisibleRaycastHit([hidden]), undefined);
 });
 
 void test('flight starts from the card using compositor-only transforms', () => {
