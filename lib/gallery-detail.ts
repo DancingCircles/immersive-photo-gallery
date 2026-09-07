@@ -13,7 +13,7 @@ export type GallerySelection = {
   sourceRect: ScreenRect;
 };
 
-export type GalleryDetailPhase = 'idle' | 'opening' | 'detail';
+export type GalleryDetailPhase = 'idle' | 'opening' | 'detail' | 'closing';
 
 export type GalleryDetailState = {
   phase: GalleryDetailPhase;
@@ -23,7 +23,8 @@ export type GalleryDetailState = {
 export type GalleryDetailAction =
   | { type: 'select'; selection: GallerySelection }
   | { type: 'opened' }
-  | { type: 'close' };
+  | { type: 'close' }
+  | { type: 'closed' };
 
 export const initialGalleryDetailState: GalleryDetailState = {
   phase: 'idle',
@@ -46,15 +47,15 @@ export function isGalleryTileExtracted(
   return selectedTileIndex !== null && tileIndex === selectedTileIndex;
 }
 
-export function galleryFlightTransform(
+export function galleryFlightStartTransform(
   source: ScreenRect,
   destination: ScreenRect,
 ) {
   return {
-    x: destination.left - source.left,
-    y: destination.top - source.top,
-    scaleX: destination.width / source.width,
-    scaleY: destination.height / source.height,
+    x: source.left - destination.left,
+    y: source.top - destination.top,
+    scaleX: source.width / destination.width,
+    scaleY: source.height / destination.height,
   };
 }
 
@@ -70,7 +71,10 @@ export function galleryDetailReducer(
   if (action.type === 'opened' && state.phase === 'opening') {
     return { ...state, phase: 'detail' };
   }
-  if (action.type === 'close' && state.phase !== 'idle') {
+  if (action.type === 'close' && state.phase === 'detail') {
+    return { ...state, phase: 'closing' };
+  }
+  if (action.type === 'closed' && state.phase === 'closing') {
     return initialGalleryDetailState;
   }
   return state;

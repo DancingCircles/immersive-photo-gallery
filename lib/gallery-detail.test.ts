@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  galleryFlightTransform,
   galleryCardMediaRect,
   galleryDetailReducer,
+  galleryFlightStartTransform,
   initialGalleryDetailState,
   isGalleryTileExtracted,
   projectedCornersToScreenRect,
@@ -15,7 +15,7 @@ const selection = {
   sourceRect: { left: 100, top: 80, width: 240, height: 180 },
 };
 
-void test('gallery detail opens once and closes immediately', () => {
+void test('gallery detail opens once and closes after entering a closing phase', () => {
   const opening = galleryDetailReducer(initialGalleryDetailState, {
     type: 'select',
     selection,
@@ -28,8 +28,11 @@ void test('gallery detail opens once and closes immediately', () => {
 
   const detail = galleryDetailReducer(opening, { type: 'opened' });
   assert.equal(detail.phase, 'detail');
+  const closing = galleryDetailReducer(detail, { type: 'close' });
+  assert.equal(closing.phase, 'closing');
+  assert.deepEqual(closing.selection, selection);
   assert.deepEqual(
-    galleryDetailReducer(detail, { type: 'close' }),
+    galleryDetailReducer(closing, { type: 'closed' }),
     initialGalleryDetailState,
   );
 });
@@ -47,13 +50,13 @@ void test('only the selected repeated tile gives up its image', () => {
   assert.equal(isGalleryTileExtracted(11, null), false);
 });
 
-void test('flight uses a compositor transform between source and destination', () => {
+void test('flight starts from the card using compositor-only transforms', () => {
   assert.deepEqual(
-    galleryFlightTransform(
+    galleryFlightStartTransform(
       { left: 100, top: 80, width: 200, height: 160 },
       { left: 460, top: 140, width: 300, height: 240 },
     ),
-    { x: 360, y: 60, scaleX: 1.5, scaleY: 1.5 },
+    { x: -360, y: -60, scaleX: 2 / 3, scaleY: 2 / 3 },
   );
 });
 

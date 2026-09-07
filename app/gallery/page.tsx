@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   galleryCardMediaRect,
   galleryDetailReducer,
-  galleryFlightTransform,
+  galleryFlightStartTransform,
   initialGalleryDetailState,
   type GallerySelection,
 } from '@/lib/gallery-detail';
@@ -24,7 +24,8 @@ import GalleryDetail from '../gallery-detail';
 import Scene from '../scene';
 import SiteNav from '../site-nav';
 
-const DETAIL_DURATION = 1.15;
+const DETAIL_DURATION = 0.72;
+const DETAIL_CLOSE_DURATION = 0.26;
 
 export default function Gallery() {
   const [mode, setMode] = useState<ViewMode>('space');
@@ -41,7 +42,7 @@ export default function Gallery() {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const selected = state.selection
-    ? projects.find(({ id }) => id === state.selection?.projectId) ?? null
+    ? (projects.find(({ id }) => id === state.selection?.projectId) ?? null)
     : null;
 
   useEffect(() => {
@@ -60,15 +61,10 @@ export default function Gallery() {
   }, []);
 
   const close = useCallback(() => {
+    if (state.phase !== 'detail') return;
     timelineRef.current?.kill();
-    if (sceneRef.current) gsap.set(sceneRef.current, { x: 0, opacity: 1 });
     dispatch({ type: 'close' });
-    requestAnimationFrame(() =>
-      sceneRef.current
-        ?.querySelector<HTMLElement>('.scene')
-        ?.focus({ preventScroll: true }),
-    );
-  }, []);
+  }, [state.phase]);
 
   useLayoutEffect(() => {
     if (
@@ -95,7 +91,7 @@ export default function Gallery() {
 
     gsap.set(panel, { xPercent: 0, visibility: 'hidden' });
     const destination = mediaRef.current.getBoundingClientRect();
-    const flightTransform = galleryFlightTransform(source, destination);
+    const flightStart = galleryFlightStartTransform(source, destination);
     gsap.set(panel, {
       xPercent: 100,
       visibility: 'visible',
@@ -105,14 +101,11 @@ export default function Gallery() {
     gsap.set(copyItems, { opacity: 0, y: 28 });
     gsap.set(flight, {
       display: 'block',
-      left: source.left,
-      top: source.top,
-      width: source.width,
-      height: source.height,
-      x: 0,
-      y: 0,
-      scaleX: 1,
-      scaleY: 1,
+      left: destination.left,
+      top: destination.top,
+      width: destination.width,
+      height: destination.height,
+      ...flightStart,
       transformOrigin: 'top left',
       opacity: 1,
     });
@@ -121,7 +114,7 @@ export default function Gallery() {
     const timeline = gsap.timeline({
       defaults: {
         duration,
-        ease: reduced ? 'none' : 'expo.inOut',
+        ease: reduced ? 'none' : 'power3.inOut',
         force3D: true,
       },
       onComplete: () => {
@@ -133,12 +126,15 @@ export default function Gallery() {
     });
     timelineRef.current = timeline;
     timeline
-      .to(scene, { x: mobile ? 0 : '-50vw', opacity: mobile ? 0.14 : 1 }, 0)
+      .to(scene, { x: mobile ? 0 : '-50vw', opacity: mobile ? 0.12 : 0.28 }, 0)
       .to(panel, { xPercent: 0, opacity: 1 }, 0)
       .to(
         flight,
         {
-          ...flightTransform,
+          x: 0,
+          y: 0,
+          scaleX: 1,
+          scaleY: 1,
           autoRound: false,
         },
         0,
@@ -148,18 +144,50 @@ export default function Gallery() {
         {
           opacity: 1,
           y: 0,
-          duration: reduced ? 0.18 : 0.85,
-          stagger: reduced ? 0 : 0.055,
-          ease: reduced ? 'none' : 'expo.out',
+          duration: reduced ? 0.18 : 0.42,
+          stagger: reduced ? 0 : 0.035,
+          ease: reduced ? 'none' : 'power2.out',
         },
-        reduced ? 0 : 0.48,
+        reduced ? 0 : 0.24,
       )
-      .set(flight, { opacity: 1 });
+      .set(detailImage, { opacity: 1 })
+      .set(flight, { display: 'none' });
 
     return () => {
       timeline.kill();
     };
   }, [selected, state.phase, state.selection]);
+
+  useLayoutEffect(() => {
+    if (state.phase !== 'closing' || !sceneRef.current || !panelRef.current)
+      return;
+
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mobile = window.innerWidth <= 900;
+    const timeline = gsap.timeline({
+      defaults: {
+        duration: reduced ? 0 : DETAIL_CLOSE_DURATION,
+        ease: reduced ? 'none' : 'power2.out',
+        force3D: true,
+      },
+      onComplete: () => {
+        dispatch({ type: 'closed' });
+        requestAnimationFrame(() =>
+          sceneRef.current
+            ?.querySelector<HTMLElement>('.scene')
+            ?.focus({ preventScroll: true }),
+        );
+      },
+    });
+    timelineRef.current = timeline;
+    timeline
+      .to(panelRef.current, { xPercent: mobile ? 0 : 4, opacity: 0 }, 0)
+      .to(sceneRef.current, { x: 0, opacity: 1 }, 0);
+
+    return () => {
+      timeline.kill();
+    };
+  }, [state.phase]);
 
   useEffect(() => {
     if (state.phase === 'idle') return;
@@ -171,21 +199,31 @@ export default function Gallery() {
   }, [close, state.phase]);
 
   return (
-    <main className="app-shell gallery-shell" data-detail-open={selected !== null}>
+    <main
+      className="app-shell gallery-shell"
+      data-detail-open={selected !== null}
+    >
       <div ref={sceneRef} className="space-view gallery-scene-view">
         <Scene
           items={projects}
           mode={mode}
           theme="light"
           paused={state.phase !== 'idle'}
-          selectedTileIndex={state.selection?.tileIndex ?? null}
+          selectedTileIndex={
+            state.phase === 'closing'
+              ? null
+              : (state.selection?.tileIndex ?? null)
+          }
           onSelect={select}
           onError={() => setMode('flat')}
         />
       </div>
       <SiteNav current="gallery" />
       <footer className="controls">
-        <Tabs value={mode} onValueChange={(value) => setMode(value as ViewMode)}>
+        <Tabs
+          value={mode}
+          onValueChange={(value) => setMode(value as ViewMode)}
+        >
           <TabsList className="view-tabs" aria-label="选择视角">
             <TabsTrigger value="space" aria-label="3D 空间视角">
               <Grid2X2 /> <span>3D</span>
