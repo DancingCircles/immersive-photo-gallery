@@ -191,7 +191,7 @@ a {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 24px;
-  margin: 140px 0 36px;
+  margin: clamp(260px, 32vh, 460px) 0 36px;
 }
 
 .featured-header__heading h1 {
