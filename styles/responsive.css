@@ -1,0 +1,146 @@
+@media (max-width: 700px) {
+  .site-nav {
+    top: 14px;
+    right: 14px;
+  }
+  .site-nav a {
+    padding-bottom: 6px;
+  }
+  .site-nav__links {
+    gap: 16px;
+  }
+  .site-nav__search {
+    margin-left: 16px;
+  }
+  .site-nav__search[data-open='true'] {
+    width: calc(100vw - 148px);
+  }
+  .site-nav__search input {
+    padding-right: 7px;
+  }
+  .site-nav__search input::placeholder {
+    color: transparent;
+  }
+}
+
+@media (max-width: 900px) {
+  .gallery-detail {
+    padding: 22px 18px 28px;
+    gap: 24px;
+  }
+
+  .gallery-detail__body {
+    gap: 24px;
+  }
+
+  .gallery-detail__copy h1 {
+    font-size: clamp(28px, 5vw, 48px);
+  }
+
+  .featured-home {
+    padding: 76px 14px 36px;
+  }
+
+  .featured-header {
+    padding: 0 8px;
+  }
+
+  .featured-header__metadata {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 10px;
+    font-size: 9px;
+  }
+
+  .featured-header__metadata p:last-child {
+    text-align: left;
+  }
+
+  .featured-header__heading {
+    margin: 80px 0 28px;
+    gap: 20px;
+  }
+
+  .featured-header__heading p {
+    font-size: 9px;
+  }
+
+  .featured-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 42px 10px;
+  }
+
+  .featured-card button {
+    padding: 8px;
+  }
+
+  .featured-card__head,
+  .featured-card__meta {
+    font-size: 9px;
+  }
+
+  .featured-detail {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 62vh) 1fr;
+    overflow: auto;
+  }
+
+  .featured-detail.image-left .featured-detail__media,
+  .featured-detail.image-right .featured-detail__media {
+    order: 1;
+  }
+
+  .featured-detail.image-left .featured-detail__copy,
+  .featured-detail.image-right .featured-detail__copy {
+    order: 2;
+  }
+
+  .featured-detail__media {
+    padding: 14px;
+  }
+
+  .featured-detail__copy {
+    padding: 28px 20px 42px;
+  }
+}
+@media (max-width: 560px) {
+  .gallery-detail {
+    width: 100vw;
+  }
+
+  .gallery-detail__dismiss-area {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .controls {
+    bottom: 12px;
+  }
+  .theme-toggle {
+    width: 54px;
+    height: 54px;
+  }
+  .view-tabs button {
+    height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  .featured-card__image img {
+    transition: none;
+  }
+
+  .featured-mover {
+    display: none;
+  }
+
+  .gallery-flight {
+    display: none !important;
+  }
+}
