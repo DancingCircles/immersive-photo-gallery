@@ -9,10 +9,5 @@ export default async function Home() {
   const date = getEditorialDate(new Date(), 'Asia/Shanghai');
   const edit = await getDailyEdit(repository, date);
 
-  return (
-    <main className="app-shell featured-page">
-      <FeaturedHome works={edit.works} />
-      <SiteNav current="featured" />
-    </main>
-  );
+  return <><FeaturedHome works={edit.works} /><SiteNav current="featured" /></>;
 }

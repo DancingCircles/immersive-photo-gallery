@@ -18,6 +18,7 @@ import FeaturedDetail from './featured-detail';
 import { toFeaturedWork, type FeaturedWork } from './daily-edit-view-model';
 import { useWorkDetail } from '@/features/work-detail/use-work-detail';
 import { useWorkHistory } from '@/features/work-detail/use-work-history';
+import SmoothScroll from './smooth-scroll';
 
 const snapshot = ({ left, top, width, height }: DOMRect): RectSnapshot => ({
   left,
@@ -356,13 +357,6 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
       element.inert = true;
       element.setAttribute('aria-hidden', 'true');
     });
-    const scrollContainer =
-      gridRef.current?.closest<HTMLElement>('.featured-page');
-    const oldOverflow = document.body.style.overflow;
-    const oldContainerOverflow = scrollContainer?.style.overflow ?? '';
-    const scrollTop = scrollContainer?.scrollTop ?? 0;
-    document.body.style.overflow = 'hidden';
-    if (scrollContainer) scrollContainer.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
       if (event.key === 'Tab') {
@@ -378,17 +372,13 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
         if (ariaHidden === null) element.removeAttribute('aria-hidden');
         else element.setAttribute('aria-hidden', ariaHidden);
       });
-      document.body.style.overflow = oldOverflow;
-      if (scrollContainer) {
-        scrollContainer.style.overflow = oldContainerOverflow;
-        scrollContainer.scrollTop = scrollTop;
-      }
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [close, selected]);
 
   return (
-    <div className="featured-home" data-detail-open={selected !== null}>
+    <SmoothScroll>
+      <div className="featured-home" data-detail-open={selected !== null}>
       <header ref={headerRef} className="featured-header">
         <div className="featured-header__metadata">
           <p>DAILY SELECTION</p>
@@ -432,6 +422,7 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
           onClose={close}
         />
       )}
-    </div>
+      </div>
+    </SmoothScroll>
   );
 }

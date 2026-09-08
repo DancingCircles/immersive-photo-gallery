@@ -34,6 +34,7 @@ export default function FeaturedDetail({
       className={`featured-detail image-${imageSide}`}
       data-phase={phase}
       data-featured-detail
+      data-lenis-prevent
       aria-label={`${work.photographerName} — ${work.displayTitle}`}
     >
       <div className="featured-detail__media">
