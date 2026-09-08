@@ -30,7 +30,7 @@
 - **运行环境：** Cloudflare Workers、Wrangler、OpenAI Sites
 - **工程工具：** Node.js Test Runner、Oxlint、Oxfmt
 
-项目目前使用本地 TypeScript 数据和静态图片，不依赖数据库、对象存储、登录系统或外部 API。
+内容层已经与展示层解耦：开发时默认从本地 TypeScript 种子数据读取；设置 HTTP 数据源后，由同源 `/api/content/*` 路由转发到 Go 内容 API。浏览器不会直接请求后端 API。
 
 ## 本地开发
 
@@ -61,7 +61,7 @@ npm run dev
 npm test
 
 # 检查应用与业务代码
-npx oxlint app lib
+npx oxlint app application domain features infrastructure lib
 
 # TypeScript 类型检查
 npx tsc --noEmit
@@ -80,22 +80,17 @@ npm run format
 
 ```text
 app/
-├── page.tsx                 # 推荐首页路由
-├── featured-home.tsx       # 推荐页状态、交互与 GSAP 转场
-├── featured-card.tsx       # 推荐作品卡片
-├── featured-detail.tsx     # 全屏作品详情
-├── gallery/page.tsx        # 3D / Flat 画廊路由
-├── scene.tsx               # Three.js 场景与交互
+├── api/content/            # 同源内容 API：gallery、works、daily-edits
+├── page.tsx                # Daily Edit 路由
+├── gallery/page.tsx        # 3D / Flat Gallery 路由
+├── works/[id]/page.tsx     # 可分享的作品详情路由
 └── globals.css             # 全局样式与响应式布局
 
-lib/
-├── projects.ts             # 全部作品数据
-├── featured.ts             # 首页推荐作品映射
-├── featured-state.ts       # 推荐页状态机
-├── repeating-transition.ts # 首页转场路径与节奏计算
-├── projection.ts           # 画廊投影与畸变参数
-├── interaction.ts          # 拖拽交互计算
-└── *.test.ts               # 单元与回归测试
+domain/                     # 作品与每日精选的稳定领域模型
+application/                # 查询用例、仓储端口与统一错误响应
+infrastructure/             # local/http 仓储、配置、同源内容客户端
+features/                   # daily-edit、gallery、work-detail 的界面实现
+lib/                        # 纯函数、状态与回归测试
 
 public/art/                  # 本地摄影作品素材
 .openai/hosting.json        # OpenAI Sites 能力声明
@@ -104,25 +99,39 @@ vite.config.ts              # Vinext、Vite、Sites 与 Cloudflare 配置
 
 ## 添加或更新作品
 
-1. 将已获授权的图片放入 `public/art/`。
-2. 在 `lib/projects.ts` 中添加或修改作品信息。
-3. 启动开发服务，检查推荐首页和 WebGL 画廊中的显示效果。
-4. 运行测试、类型检查和构建。
+本地开发时，作品种子数据位于 `infrastructure/local/local-content-repository.ts`；将已获授权的图片放入 `public/art/` 后，在该适配器中补全作品信息。生产环境应由 Go API 写入并返回这些数据，而不是由页面直接读取静态数据。
 
 作品数据结构：
 
 ```ts
-type Project = {
-  id: number;
+type WorkDetail = {
+  id: string;
   title: string;
-  photographer: string;
+  photographerName: string;
   publishedAt: string;
   category: string;
-  image: string;
+  thumbnail: ImageAsset;
+  image: ImageAsset;
+  attribution: { sourceUrl: string; licenseName: string; creditLine: string };
+  artistStatement?: string;
+  editorialNote?: string;
+  aiAnalysis?: { content: string; generatedAt: string; model: string; version: string };
 };
 ```
 
-推荐首页当前由 `lib/featured.ts` 选取作品库中的前 12 项，不会根据日期自动轮换。两种展示模式共用 `lib/projects.ts`，因此作品只需维护一份数据。
+摄影师原话、编辑部文案、AI 分析必须分别存储；来源、署名与许可信息为每件作品的必填元数据。Daily Edit 由内容仓储按日期返回固定 12 件，不由页面以数组切片生成。
+
+## 内容源与 Go API
+
+复制 `.env.example` 为本地环境文件后，默认使用 `CONTENT_SOURCE=local`。接入 Go 服务时设置 `CONTENT_SOURCE=http`、`CONTENT_API_BASE_URL` 和可选超时值；浏览器依旧只请求同源路由。
+
+Go 服务需要实现以下 JSON 信封接口（所有成功响应为 `{ "data": ... }`，错误响应为 `{ "error": { "code", "message", "requestId" } }`）：
+
+- `GET /v1/works?cursor=&limit=&query=`：游标分页的作品摘要，返回 `{ items, nextCursor, hasMore }`。
+- `GET /v1/works/:id`：单件完整 `WorkDetail`。
+- `GET /v1/daily-edits/:date`：指定日期的 12 件固定精选。
+
+接口字段与解码规则见 `docs/api/content-api.md`。画廊客户端以 48 张 Three.js 卡片为固定池，靠近已加载末尾时预取下一页；后端负责游标、搜索、每日精选和最多 1000 件作品的淘汰策略。
 
 ## 验证
 
@@ -130,12 +139,12 @@ type Project = {
 
 ```sh
 npm test
-npx oxlint app lib
+npx oxlint app application domain features infrastructure lib
 npx tsc --noEmit
 npm run build
 ```
 
-测试主要覆盖推荐作品映射、详情转场状态、重复影像路径、拖拽阈值、画廊投影以及响应式布局约束。
+测试覆盖内容契约、本地与 HTTP 仓储、API 响应、Daily Edit、画廊分页与固定卡片池，以及既有详情转场、拖拽和布局约束。
 
 ## 构建与运行
 
