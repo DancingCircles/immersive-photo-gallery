@@ -391,7 +391,7 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
           <p>2026 COLLECTION</p>
         </div>
         <div className="featured-header__heading">
-          <h1>DAILY EDIT</h1>
+          <h1>DAILY RECOMMENDATION</h1>
           <p>SELECT A WORK TO VIEW</p>
         </div>
       </header>

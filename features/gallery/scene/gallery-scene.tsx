@@ -24,6 +24,7 @@ import {
   type ViewMode,
 } from '@/shared/geometry/gallery-projection';
 import { cameraDistanceForDrag, isDragGesture } from '@/shared/input/drag';
+import { createCrossOriginImage } from './cross-origin-image';
 import {
   virtualCellForOffset,
   catalogIndexForCell,
@@ -270,7 +271,7 @@ export default function Scene({
             isGalleryTileExtracted(tileIndex, selectedTileRef.current),
           );
           if (!work) return;
-          const img = new Image();
+          const img = createCrossOriginImage();
           pendingImage = img;
           img.onload = () => {
             if (!alive || !generation.isCurrent(currentGeneration)) return;

@@ -37,6 +37,8 @@ The frontend preserves `requestId` when present. Unknown extra fields are ignore
 
 ## Endpoints
 
+The currently deployed Go API uses `image.url`, `photographer`, and analysis tags in its work payloads, and omits `hasMore` when no cursor remains. The frontend's server-side HTTP adapter converts those fields into the domain model below; browser clients remain unchanged.
+
 ### `GET /v1/works`
 
 Query parameters:
@@ -59,9 +61,9 @@ Response data:
 
 Returns one full `WorkDetail`. Use `404` for unknown IDs and `410` for works removed by the future淘汰策略.
 
-### `GET /v1/daily-edits/{date}`
+### `GET /v1/recommendations/{date}`
 
-`date` uses `YYYY-MM-DD`. The response must contain the curated 12 works for that date. Do not silently fall back to the gallery list when a daily edit is missing.
+`date` uses `YYYY-MM-DD`. The current Go API returns `createdAt` and ordered `items`, each containing a `work`; the HTTP adapter maps that response to the frontend's stable daily-edit model. Do not silently fall back to the gallery list when a recommendation is missing.
 
 ```json
 {

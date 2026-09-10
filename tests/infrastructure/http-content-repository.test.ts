@@ -28,22 +28,77 @@ void test('HTTP repository sends Go API query parameters', async () => {
   const repository = createHttpContentRepository({
     baseUrl: 'https://api.example.test/root/',
     fetchImpl: async (input) => {
-      urls.push(input instanceof URL ? input.href : input instanceof Request ? input.url : input);
-      return Response.json({ data: { items: [summary], nextCursor: 'offset:1', hasMore: true } });
+      urls.push(
+        input instanceof URL
+          ? input.href
+          : input instanceof Request
+            ? input.url
+            : input,
+      );
+      return Response.json({
+        data: { items: [summary], nextCursor: 'offset:1', hasMore: true },
+      });
     },
   });
-  const page = await repository.listWorks({ limit: 12, cursor: 'offset:1', query: ' street ' });
+  const page = await repository.listWorks({
+    limit: 12,
+    cursor: 'offset:1',
+    query: ' street ',
+  });
   assert.equal(page.items[0].id, 'work-01');
-  assert.equal(urls[0], 'https://api.example.test/root/v1/works?limit=12&cursor=offset%3A1&query=street');
+  assert.equal(
+    urls[0],
+    'https://api.example.test/root/v1/works?limit=12&cursor=offset%3A1&query=street',
+  );
+});
+
+void test('HTTP repository resolves relative image URLs against the Go API origin', async () => {
+  const repository = createHttpContentRepository({
+    baseUrl: 'https://api.example.test/root/',
+    fetchImpl: async () =>
+      Response.json({
+        data: {
+          items: [
+            {
+              id: 'work-01',
+              title: 'Untitled 01',
+              image: {
+                url: '/v1/works/work-01/image',
+                width: 1200,
+                height: 900,
+                format: 'webp',
+              },
+              photographer: 'Photographer 01',
+              publishedAt: '2026-01-01T00:00:00Z',
+              analysis: { tags: ['portrait'] },
+            },
+          ],
+        },
+      }),
+  });
+
+  const page = await repository.listWorks({ limit: 48 });
+
+  assert.equal(
+    page.items[0].thumbnail.src,
+    'https://api.example.test/v1/works/work-01/image',
+  );
 });
 
 void test('HTTP repository maps non 2xx errors and preserves request id', async () => {
   const repository = createHttpContentRepository({
     baseUrl: 'https://api.example.test',
-    fetchImpl: async () => Response.json(
-      { error: { code: 'WORK_NOT_FOUND', message: 'Missing', requestId: 'request-404' } },
-      { status: 404 },
-    ),
+    fetchImpl: async () =>
+      Response.json(
+        {
+          error: {
+            code: 'WORK_NOT_FOUND',
+            message: 'Missing',
+            requestId: 'request-404',
+          },
+        },
+        { status: 404 },
+      ),
   });
   await assert.rejects(
     () => repository.getWork('missing'),
@@ -76,12 +131,16 @@ void test('HTTP repository aborts timed out requests', async () => {
 void test('HTTP repository converts invalid response structure', async () => {
   const repository = createHttpContentRepository({
     baseUrl: 'https://api.example.test',
-    fetchImpl: async () => Response.json({ data: { items: [{}], nextCursor: null, hasMore: false } }),
+    fetchImpl: async () =>
+      Response.json({
+        data: { items: [{}], nextCursor: null, hasMore: false },
+      }),
   });
   await assert.rejects(
     () => repository.listWorks({ limit: 48 }),
     (error: unknown) =>
-      error instanceof ContentError && error.code === 'INVALID_CONTENT_RESPONSE',
+      error instanceof ContentError &&
+      error.code === 'INVALID_CONTENT_RESPONSE',
   );
 });
 
@@ -94,12 +153,18 @@ void test('content source creates HTTP repository when configured', () => {
   assert.equal(typeof repository.listWorks, 'function');
 });
 
-void test('HTTP repository fetches direct work detail and daily edit paths', async () => {
+void test('HTTP repository fetches direct work detail and the current Go recommendation path', async () => {
   const urls: string[] = [];
   const repository = createHttpContentRepository({
     baseUrl: 'https://api.example.test',
     fetchImpl: async (input) => {
-      urls.push(input instanceof URL ? input.href : input instanceof Request ? input.url : input);
+      urls.push(
+        input instanceof URL
+          ? input.href
+          : input instanceof Request
+            ? input.url
+            : input,
+      );
       return urls.length === 1
         ? Response.json({ data: detail })
         : Response.json({
@@ -116,6 +181,6 @@ void test('HTTP repository fetches direct work detail and daily edit paths', asy
   await repository.getDailyEdit('2026-09-08');
   assert.deepEqual(urls, [
     'https://api.example.test/v1/works/work%2Fa%20b',
-    'https://api.example.test/v1/daily-edits/2026-09-08',
+    'https://api.example.test/v1/recommendations/2026-09-08',
   ]);
 });

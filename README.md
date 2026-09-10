@@ -127,9 +127,9 @@ type WorkDetail = {
 
 Go 服务需要实现以下 JSON 信封接口（所有成功响应为 `{ "data": ... }`，错误响应为 `{ "error": { "code", "message", "requestId" } }`）：
 
-- `GET /v1/works?cursor=&limit=&query=`：游标分页的作品摘要，返回 `{ items, nextCursor, hasMore }`。
+- `GET /v1/works?cursor=&limit=&query=`：游标分页的作品摘要；当前 Go API 以 `nextCursor` 是否存在表示是否还有下一页，HTTP 适配器会补齐 `hasMore`。
 - `GET /v1/works/:id`：单件完整 `WorkDetail`。
-- `GET /v1/daily-edits/:date`：指定日期的 12 件固定精选。
+- `GET /v1/recommendations/:date`：指定日期的固定精选；HTTP 适配器会将其 `items` 映射为 Daily Edit。
 
 接口字段与解码规则见 `docs/api/content-api.md`。画廊客户端以 48 张 Three.js 卡片为固定池，靠近已加载末尾时预取下一页；后端负责游标、搜索、每日精选和最多 1000 件作品的淘汰策略。
 
