@@ -19,6 +19,11 @@ import { toFeaturedWork, type FeaturedWork } from './daily-edit-view-model';
 import { useWorkDetail } from '@/features/work-detail/use-work-detail';
 import { useWorkHistory } from '@/features/work-detail/use-work-history';
 import SmoothScroll from './smooth-scroll';
+import XylophoneBackground, {
+  type XylophoneBackgroundHandle,
+} from './xylophone-background';
+import XylophoneSoundToggle from './xylophone-sound-toggle';
+import SiteNav from '@/components/navigation/site-nav';
 
 const snapshot = ({ left, top, width, height }: DOMRect): RectSnapshot => ({
   left,
@@ -30,6 +35,8 @@ const snapshot = ({ left, top, width, height }: DOMRect): RectSnapshot => ({
 export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
   const [state, dispatch] = useReducer(featuredReducer, initialFeaturedState);
   const [imageSide, setImageSide] = useState<ImageSide>('right');
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const xylophoneRef = useRef<XylophoneBackgroundHandle | null>(null);
   const sourceRef = useRef<HTMLButtonElement | null>(null);
   const sourceRectRef = useRef<RectSnapshot | null>(null);
   const panelRef = useRef<HTMLDialogElement | null>(null);
@@ -50,6 +57,11 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
   );
   const selected =
     state.selectedId === null ? null : (dailyWorks[state.selectedId] ?? null);
+
+  const changeSoundEnabled = useCallback((enabled: boolean) => {
+    xylophoneRef.current?.setSoundEnabled(enabled);
+    setSoundEnabled(enabled);
+  }, []);
 
   const removeMovers = useCallback(() => {
     layersRef.current.forEach((layer) => layer.remove());
@@ -377,24 +389,28 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
   }, [close, selected]);
 
   return (
-    <SmoothScroll>
-      <div className="featured-home" data-detail-open={selected !== null}>
-      <header ref={headerRef} className="featured-header">
-        <div className="featured-header__metadata">
-          <p>DAILY SELECTION</p>
-          <p>12 PHOTOGRAPHERS / 12 WORKS</p>
-          <p>
-            PORTRAIT, STREET,
-            <br />
-            LANDSCAPE, DOCUMENTARY
-          </p>
-          <p>2026 COLLECTION</p>
-        </div>
-        <div className="featured-header__heading">
-          <h1>DAILY RECOMMENDATION</h1>
-          <p>SELECT A WORK TO VIEW</p>
-        </div>
-      </header>
+    <>
+      <SmoothScroll>
+        <div className="featured-home" data-detail-open={selected !== null}>
+          <XylophoneBackground ref={xylophoneRef} soundEnabled={soundEnabled} />
+        <section className="featured-intro">
+          <header ref={headerRef} className="featured-header">
+            <div className="featured-header__metadata">
+              <p>DAILY SELECTION</p>
+              <p>12 PHOTOGRAPHERS / 12 WORKS</p>
+              <p>
+                PORTRAIT, STREET,
+                <br />
+                LANDSCAPE, DOCUMENTARY
+              </p>
+              <p>2026 COLLECTION</p>
+            </div>
+            <div className="featured-header__heading">
+              <h1>DAILY RECOMMENDATION</h1>
+              <p>SCROLL TO EXPLORE THE WORKS</p>
+            </div>
+          </header>
+        </section>
       <section
         ref={gridRef}
         className="featured-grid"
@@ -422,7 +438,14 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
           onClose={close}
         />
       )}
-      </div>
-    </SmoothScroll>
+        </div>
+      </SmoothScroll>
+      <SiteNav current="featured">
+        <XylophoneSoundToggle
+          enabled={soundEnabled}
+          onChange={changeSoundEnabled}
+        />
+      </SiteNav>
+    </>
   );
 }

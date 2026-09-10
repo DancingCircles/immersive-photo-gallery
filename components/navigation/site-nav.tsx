@@ -2,16 +2,18 @@
 
 import Link from 'next/link';
 import { Search, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 export default function SiteNav({
   current,
   searchValue = '',
   onSearchChange,
+  children,
 }: {
   current: 'featured' | 'gallery';
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  children?: ReactNode;
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +29,7 @@ export default function SiteNav({
 
   return (
     <nav className="site-nav" aria-label="页面导航">
+      {children}
       <div className="site-nav__links">
         <Link
           href="/"
