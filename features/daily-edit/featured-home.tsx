@@ -398,12 +398,6 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
             <div className="featured-header__metadata">
               <p>DAILY SELECTION</p>
               <p>12 PHOTOGRAPHERS / 12 WORKS</p>
-              <p>
-                PORTRAIT, STREET,
-                <br />
-                LANDSCAPE, DOCUMENTARY
-              </p>
-              <p>2026 COLLECTION</p>
             </div>
             <div className="featured-header__heading">
               <h1>DAILY RECOMMENDATION</h1>

@@ -13,6 +13,8 @@ void test('homepage keeps the xylophone canvas behind its scrollable work list',
   assert.match(home, /XylophoneSoundToggle/);
   assert.match(home, /<SiteNav current="featured">/);
   assert.match(home, /useState\(true\)/);
+  assert.doesNotMatch(home, /PORTRAIT, STREET/);
+  assert.doesNotMatch(home, /2026 COLLECTION/);
 });
 
 void test('xylophone background and user-controlled audio modules are present', () => {

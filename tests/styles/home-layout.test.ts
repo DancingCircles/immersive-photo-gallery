@@ -12,3 +12,10 @@ void test('daily recommendation sits at the bottom of a viewport-height intro', 
   assert.match(stylesheet, /\.featured-header__heading\s*{[^}]*margin:\s*auto\s+0\s+36px;/);
   assert.match(stylesheet, /@media \(max-width:\s*900px\)\s*{[\s\S]*?\.featured-header__heading\s*{[^}]*margin:\s*auto\s+0\s+28px;/);
 });
+
+void test('featured cards crop thumbnails to their frame without white letterboxing', () => {
+  assert.match(
+    stylesheet,
+    /\.featured-card__image img\s*{[^}]*object-fit:\s*cover;/,
+  );
+});
