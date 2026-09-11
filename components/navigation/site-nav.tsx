@@ -53,7 +53,7 @@ export default function SiteNav({
             tabIndex={searchOpen ? 0 : -1}
             aria-label="搜索作品"
             aria-hidden={!searchOpen}
-            placeholder="标题 / 摄影师 / 分类 / 年份"
+            placeholder="想看什么，尽管搜"
             onChange={(event) => onSearchChange(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === 'Escape') closeSearch();
