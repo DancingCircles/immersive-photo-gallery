@@ -3,7 +3,10 @@ import type { FeaturedWork } from './daily-edit-view-model';
 import type { FeaturedPhase } from '@/features/daily-edit/state/featured-state';
 import type { ImageSide } from '@/shared/animation/repeating-transition';
 import type { WorkDetailState } from '@/features/work-detail/use-work-detail';
-import { WorkDetailCopy } from '@/features/work-detail/work-detail-view';
+import {
+  WorkAttribution,
+  WorkDetailCopy,
+} from '@/features/work-detail/work-detail-view';
 
 export default function FeaturedDetail({
   work,
@@ -42,16 +45,19 @@ export default function FeaturedDetail({
       aria-label={`${work.photographerName} — ${work.displayTitle}`}
     >
       <div className="featured-detail__media">
-        {/* Native image geometry and local URL are shared with the GSAP mover layers. */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          ref={imageRef}
-          src={work.thumbnail.src}
-          alt=""
-          onError={(event) => {
-            event.currentTarget.hidden = true;
-          }}
-        />
+        <div className="featured-detail__media-frame">
+          {/* Native image geometry and local URL are shared with the GSAP mover layers. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={imageRef}
+            src={work.thumbnail.src}
+            alt=""
+            onError={(event) => {
+              event.currentTarget.hidden = true;
+            }}
+          />
+        </div>
+        {detail.status === 'ready' && <WorkAttribution work={detail.work} />}
       </div>
       <div ref={copyRef} className="featured-detail__copy">
         <p>{work.positionLabel}</p>

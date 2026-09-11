@@ -46,11 +46,11 @@ void test('closing restores the source card early', () => {
 void test('detail image keeps its original aspect ratio in the upper area', () => {
   assert.match(
     stylesheet,
-    /\.gallery-detail__media\s*{[^}]*width:\s*min\(100%,\s*320px\);[^}]*height:\s*auto;[^}]*flex:\s*0\s+0\s+auto;[^}]*align-self:\s*center;[^}]*background:\s*transparent;/,
+    /\.gallery-detail__media\s*{[^}]*width:\s*100%;[^}]*max-width:\s*100%;[^}]*height:\s*auto;[^}]*flex:\s*0\s+0\s+auto;[^}]*align-self:\s*center;[^}]*background:\s*transparent;/,
   );
   assert.match(
     stylesheet,
-    /\.gallery-detail__media img\s*{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain;[^}]*object-position:\s*center;/,
+    /\.gallery-detail__media-frame img\s*{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain;[^}]*object-position:\s*center;/,
   );
   assert.match(
     detailPage,

@@ -2,7 +2,10 @@ import type { RefObject } from 'react';
 import type { GalleryDetailPhase } from '@/features/gallery/detail/detail-state';
 import type { GalleryCard } from '../catalog/card-view-model';
 import type { WorkDetailState } from '@/features/work-detail/use-work-detail';
-import { WorkDetailCopy } from '@/features/work-detail/work-detail-view';
+import {
+  WorkAttribution,
+  WorkDetailCopy,
+} from '@/features/work-detail/work-detail-view';
 
 export default function GalleryDetail({
   work,
@@ -43,19 +46,22 @@ export default function GalleryDetail({
         <span>{String(work.directoryPosition).padStart(2, '0')}</span>
       </header>
       <div className="gallery-detail__body">
-        <div
-          ref={mediaRef}
-          className="gallery-detail__media"
-          style={{
-            aspectRatio: `${work.thumbnail.width} / ${work.thumbnail.height}`,
-          }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            ref={imageRef}
-            src={work.thumbnail.src}
-            alt={`${work.title}，${work.photographerName}`}
-          />
+        <div className="gallery-detail__media">
+          <div
+            ref={mediaRef}
+            className="gallery-detail__media-frame"
+            style={{
+              aspectRatio: `${work.thumbnail.width} / ${work.thumbnail.height}`,
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={imageRef}
+              src={work.thumbnail.src}
+              alt={`${work.title}，${work.photographerName}`}
+            />
+          </div>
+          {detail.status === 'ready' && <WorkAttribution work={detail.work} />}
         </div>
         <div ref={copyRef} className="gallery-detail__copy">
           <p>{work.category}</p>

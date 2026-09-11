@@ -35,6 +35,9 @@ export type WorkDetail = WorkSummary & {
   artistStatement?: string;
   localizedTitle?: string;
   localizedDescription?: string;
+  promptZh?: string;
+  promptEn?: string;
+  negativePrompt?: string;
   editorialNote?: string;
   imageAnalysis?: string;
   aiAnalysis?: AIAnalysis;

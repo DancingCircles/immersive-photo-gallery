@@ -157,6 +157,12 @@ export function decodeWorkDetail(input: unknown): WorkDetail {
         data.localizedDescription,
         'data.localizedDescription',
       ),
+      promptZh: optionalNonEmptyStringAt(data.promptZh, 'data.promptZh'),
+      promptEn: optionalNonEmptyStringAt(data.promptEn, 'data.promptEn'),
+      negativePrompt: optionalNonEmptyStringAt(
+        data.negativePrompt,
+        'data.negativePrompt',
+      ),
       imageAnalysis: optionalNonEmptyStringAt(
         analysis.summary,
         'data.analysis.summary',
@@ -197,6 +203,12 @@ export function decodeWorkDetail(input: unknown): WorkDetail {
     localizedDescription: optionalStringAt(
       data.localizedDescription,
       'data.localizedDescription',
+    ),
+    promptZh: optionalNonEmptyStringAt(data.promptZh, 'data.promptZh'),
+    promptEn: optionalNonEmptyStringAt(data.promptEn, 'data.promptEn'),
+    negativePrompt: optionalNonEmptyStringAt(
+      data.negativePrompt,
+      'data.negativePrompt',
     ),
     editorialNote: optionalStringAt(data.editorialNote, 'data.editorialNote'),
     aiAnalysis: aiAnalysis

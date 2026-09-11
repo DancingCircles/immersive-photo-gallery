@@ -30,7 +30,7 @@
   }
 
   .gallery-detail__body {
-    gap: 24px;
+    gap: clamp(8px, 0.5vw, 10px);
   }
 
   .gallery-detail__copy h1 {

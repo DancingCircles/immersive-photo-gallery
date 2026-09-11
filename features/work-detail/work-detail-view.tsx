@@ -2,6 +2,18 @@ import Link from 'next/link';
 import type { WorkDetail } from '@/domain/work/work';
 import type { WorkDetailState } from './use-work-detail';
 
+export function WorkAttribution({ work }: { work: WorkDetail }) {
+  return (
+    <p className="work-detail-attribution">
+      {work.attribution.creditLine} ·{' '}
+      <a href={work.attribution.sourceUrl} target="_blank" rel="noreferrer">
+        作品来源
+      </a>{' '}
+      · {work.attribution.licenseName}
+    </p>
+  );
+}
+
 export function WorkDetailCopy({ detail }: { detail: WorkDetailState }) {
   if (detail.status === 'loading') return <output>加载作品介绍…</output>;
   if (detail.status === 'error')
@@ -35,13 +47,36 @@ export function WorkDetailCopy({ detail }: { detail: WorkDetailState }) {
           <p>{work.aiAnalysis.content}</p>
         </section>
       )}
-      <p>
-        {work.attribution.creditLine} ·{' '}
-        <a href={work.attribution.sourceUrl} target="_blank" rel="noreferrer">
-          作品来源
-        </a>{' '}
-        · {work.attribution.licenseName}
-      </p>
+      {(work.promptZh || work.promptEn || work.negativePrompt) && (
+        <details className="work-detail-copy__prompt-disclosure">
+          <summary>
+            <span>AI 生成提示词</span>
+            <span className="work-detail-copy__prompt-arrow" aria-hidden="true">
+              ↓
+            </span>
+          </summary>
+          <section aria-label="AI 生成提示词">
+            {work.promptZh && (
+              <>
+                <h3>中文提示词</h3>
+                <p>{work.promptZh}</p>
+              </>
+            )}
+            {work.promptEn && (
+              <>
+                <h3>English prompt</h3>
+                <p>{work.promptEn}</p>
+              </>
+            )}
+            {work.negativePrompt && (
+              <>
+                <h3>负面提示词</h3>
+                <p>{work.negativePrompt}</p>
+              </>
+            )}
+          </section>
+        </details>
+      )}
     </div>
   );
 }
@@ -55,21 +90,23 @@ export default function WorkDetailView({ work }: { work: WorkDetail }) {
         <Link href="/gallery">返回画廊</Link>
       </header>
       <article className="work-detail-page__article">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={work.image.src}
-          alt={work.image.alt}
-          width={work.image.width}
-          height={work.image.height}
-          style={{
-            display: 'block',
-            width: 'auto',
-            maxWidth: '100%',
-            height: 'auto',
-            maxHeight: 320,
-            margin: '0 auto 48px',
-          }}
-        />
+        <div className="work-detail-page__media">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={work.image.src}
+            alt={work.image.alt}
+            width={work.image.width}
+            height={work.image.height}
+            style={{
+              display: 'block',
+              width: 'auto',
+              maxWidth: '100%',
+              height: 'auto',
+              maxHeight: 320,
+            }}
+          />
+          <WorkAttribution work={work} />
+        </div>
         <p>{work.category}</p>
         <h1>{displayTitle}</h1>
         <p>摄影师：{work.photographerName}</p>

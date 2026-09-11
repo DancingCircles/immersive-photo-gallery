@@ -8,3 +8,9 @@ void test('image interpretation is explicitly labelled as AI-generated', () => {
   assert.match(viewSource, /aria-label="AI 图像解读"/);
   assert.match(viewSource, /<h2>AI 图像解读<\/h2>/);
 });
+
+void test('generation prompts are collapsed behind an accessible disclosure', () => {
+  assert.match(viewSource, /<details className="work-detail-copy__prompt-disclosure">/);
+  assert.match(viewSource, /<summary>/);
+  assert.match(viewSource, /AI 生成提示词/);
+});

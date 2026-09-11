@@ -306,11 +306,18 @@
   min-height: 0;
   padding: 28px;
   display: grid;
-  place-items: center;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: stretch;
   background: transparent;
 }
 
-.featured-detail__media img {
+.featured-detail__media-frame {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+
+.featured-detail__media-frame img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -377,11 +384,71 @@
 }
 
 .work-detail-copy h2 {
-  font: 600 11px/1.35 var(--font-ui);
+  color: #bd3028;
+  font: 700 16px/1.25 var(--font-ui);
+  letter-spacing: 0.01em;
+}
+
+.work-detail-copy h3 {
+  margin: 10px 0 0;
+  color: #bd3028;
+  font: 600 13px/1.3 var(--font-ui);
+  letter-spacing: 0.01em;
+}
+
+.work-detail-copy__prompt-disclosure {
+  border-top: 1px solid #e2c9c6;
+  padding-top: 10px;
+}
+
+.work-detail-copy__prompt-disclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+  color: #bd3028;
+  font: 700 16px/1.25 var(--font-ui);
+  letter-spacing: 0.01em;
+}
+
+.work-detail-copy__prompt-disclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.work-detail-copy__prompt-disclosure summary:focus-visible {
+  outline: 2px solid #bd3028;
+  outline-offset: 4px;
+}
+
+.work-detail-copy__prompt-arrow {
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.work-detail-copy__prompt-disclosure[open] .work-detail-copy__prompt-arrow {
+  transform: rotate(180deg);
+}
+
+.work-detail-copy__prompt-disclosure > section {
+  margin-top: 14px;
 }
 
 .work-detail-copy p {
-  font: 12px/1.6 var(--font-ui);
+  max-width: 100%;
+  color: #242424;
+  font: 12px/1.7 var(--font-ui);
+  text-align: left;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+/* The gallery metadata rules right-align some direct paragraphs. Keep the
+   longer editorial and prompt copy consistently readable inside its sections. */
+.gallery-detail__copy .work-detail-copy p,
+.featured-detail__copy .work-detail-copy p {
+  text-align: left;
 }
 
 .featured-mover {
