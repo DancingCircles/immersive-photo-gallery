@@ -61,6 +61,12 @@ Response data:
 
 Returns one full `WorkDetail`. Use `404` for unknown IDs and `410` for works removed by the future淘汰策略.
 
+### Image renditions
+
+- List and recommendation payloads reference a 480px thumbnail through `image.url`.
+- `GET /v1/works/{id}/image` returns the 1600px display image for the detail view.
+- `GET /v1/works/{id}/thumbnail` returns the thumbnail rendition used by gallery cards.
+
 ### `GET /v1/recommendations/{date}`
 
 `date` uses `YYYY-MM-DD`. The current Go API returns `createdAt` and ordered `items`, each containing a `work`; the HTTP adapter maps that response to the frontend's stable daily-edit model. Do not silently fall back to the gallery list when a recommendation is missing.

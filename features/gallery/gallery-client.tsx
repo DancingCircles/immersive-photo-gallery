@@ -57,7 +57,7 @@ export default function GalleryClient({
   const mediaRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const copyRef = useRef<HTMLDivElement>(null);
-  const flightRef = useRef<HTMLImageElement>(null);
+  const flightRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const items = useMemo(() => catalogItems.map(toGalleryCard), [catalogItems]);
@@ -87,7 +87,11 @@ export default function GalleryClient({
     dispatch({ type: 'close' });
   }, [state.phase]);
   const detail = useWorkDetail(selected?.id ?? null);
-  const { begin: beginHistory, finish: finishHistory } = useWorkHistory(selected?.id ?? null, state.phase === 'detail', close);
+  const { begin: beginHistory, finish: finishHistory } = useWorkHistory(
+    selected?.id ?? null,
+    state.phase === 'detail',
+    close,
+  );
 
   useLayoutEffect(() => {
     if (
@@ -120,7 +124,11 @@ export default function GalleryClient({
       visibility: 'visible',
       opacity: reduced ? 0 : 1,
     });
-    gsap.set(detailImage, { opacity: 0 });
+    gsap.set(detailImage, {
+      opacity: 0,
+      scale: 0.985,
+      transformOrigin: 'center',
+    });
     gsap.set(copyItems, { opacity: 0, y: 28 });
     gsap.set(flight, {
       display: 'block',
@@ -163,6 +171,16 @@ export default function GalleryClient({
         0,
       )
       .to(
+        detailImage,
+        {
+          opacity: 1,
+          scale: 1,
+          duration: reduced ? 0.18 : 0.42,
+          ease: reduced ? 'none' : 'power2.out',
+        },
+        reduced ? 0 : 0.1,
+      )
+      .to(
         copyItems,
         {
           opacity: 1,
@@ -173,7 +191,15 @@ export default function GalleryClient({
         },
         reduced ? 0 : 0.24,
       )
-      .set(detailImage, { opacity: 1 })
+      .to(
+        flight,
+        {
+          opacity: 0,
+          duration: reduced ? 0 : 0.18,
+          ease: reduced ? 'none' : 'power2.out',
+        },
+        reduced ? 0.02 : 0.54,
+      )
       .set(flight, { display: 'none' });
     beginHistory(state.selection.projectId);
 
@@ -254,18 +280,24 @@ export default function GalleryClient({
       {catalogStatus === 'search-error' && (
         <div className="gallery-catalog__notice" role="alert">
           <span>{catalogError?.message ?? '搜索作品失败'}</span>
-          <button type="button" onClick={retry}>重试</button>
+          <button type="button" onClick={retry}>
+            重试
+          </button>
         </div>
       )}
-      {query.trim() && catalogStatus === 'ready' && visibleProjectIds.length === 0 && (
-        <output className="gallery-empty-results">
-          NO WORKS FOUND / 未找到作品
-        </output>
-      )}
+      {query.trim() &&
+        catalogStatus === 'ready' &&
+        visibleProjectIds.length === 0 && (
+          <output className="gallery-empty-results">
+            NO WORKS FOUND / 未找到作品
+          </output>
+        )}
       {catalogStatus === 'load-more-error' && (
         <div className="gallery-catalog__notice" role="alert">
           <span>{catalogError?.message ?? '加载更多作品失败'}</span>
-          <button type="button" onClick={retry}>重试</button>
+          <button type="button" onClick={retry}>
+            重试
+          </button>
         </div>
       )}
       <footer className="controls">
@@ -273,11 +305,7 @@ export default function GalleryClient({
           value={mode}
           onValueChange={(value) => setMode(value as ViewMode)}
         >
-          <TabsList
-            className="view-tabs"
-            variant="line"
-            aria-label="选择视角"
-          >
+          <TabsList className="view-tabs" variant="line" aria-label="选择视角">
             <TabsTrigger value="space" aria-label="3D 空间视角">
               3D VIEW
             </TabsTrigger>
@@ -317,12 +345,9 @@ export default function GalleryClient({
             closeButtonRef={closeButtonRef}
             onClose={close}
           />
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <div
             ref={flightRef}
-            className="gallery-flight"
-            src={selected.thumbnail.src}
-            alt=""
+            className="gallery-flight-frame"
             aria-hidden="true"
           />
         </>

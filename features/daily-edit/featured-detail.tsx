@@ -26,6 +26,10 @@ export default function FeaturedDetail({
   closeButtonRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }) {
+  const displayTitle =
+    detail.status === 'ready' && detail.work.localizedTitle
+      ? detail.work.localizedTitle
+      : work.displayTitle;
   return (
     <dialog
       ref={panelRef}
@@ -51,8 +55,8 @@ export default function FeaturedDetail({
       </div>
       <div ref={copyRef} className="featured-detail__copy">
         <p>{work.positionLabel}</p>
-        <h1>{work.photographerName}</h1>
-        <p>{work.displayTitle}</p>
+        <h1>{displayTitle}</h1>
+        <p>摄影师：{work.photographerName}</p>
         <p>
           {work.categoryLabel} · {work.year}
         </p>

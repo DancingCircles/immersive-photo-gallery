@@ -73,3 +73,15 @@ void test('the scene updates items separately from its fixed renderer lifetime',
   assert.match(scene, /cols = 8,\s*rows = 6/);
   assert.equal((scene.match(/new THREE\.CanvasTexture/g) ?? []).length, 1);
 });
+
+void test('the scene caps its texture and render-loop work for a growing catalog', () => {
+  const scene = readFileSync(
+    new URL('../../../../features/gallery/scene/gallery-scene.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.match(scene, /CARD_CANVAS_SCALE = 0\.6/);
+  assert.match(scene, /PIXEL_RATIO_CAP = 1\.25/);
+  assert.match(scene, /if \(needsPicking\) raycaster\.setFromCamera/);
+  assert.match(scene, /if \(alive && !raf\) raf = requestAnimationFrame\(frame\)/);
+  assert.match(scene, /const frame = \(now: number\) => \{\s*raf = 0;/);
+});

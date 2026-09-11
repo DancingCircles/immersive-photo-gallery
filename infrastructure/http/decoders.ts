@@ -35,7 +35,10 @@ function optionalStringAt(value: unknown, path: string): string | undefined {
   return stringAt(value, path);
 }
 
-function optionalNonEmptyStringAt(value: unknown, path: string): string | undefined {
+function optionalNonEmptyStringAt(
+  value: unknown,
+  path: string,
+): string | undefined {
   if (value === undefined || value === '') return undefined;
   return stringAt(value, path);
 }
@@ -146,7 +149,18 @@ export function decodeWorkDetail(input: unknown): WorkDetail {
         summary.thumbnail.alt,
       ),
       artistStatement: optionalStringAt(data.description, 'data.description'),
-      imageAnalysis: optionalNonEmptyStringAt(analysis.summary, 'data.analysis.summary'),
+      localizedTitle: optionalStringAt(
+        data.localizedTitle,
+        'data.localizedTitle',
+      ),
+      localizedDescription: optionalStringAt(
+        data.localizedDescription,
+        'data.localizedDescription',
+      ),
+      imageAnalysis: optionalNonEmptyStringAt(
+        analysis.summary,
+        'data.analysis.summary',
+      ),
       attribution: {
         sourceUrl: stringAt(
           attribution.sourceUrl,
@@ -175,6 +189,14 @@ export function decodeWorkDetail(input: unknown): WorkDetail {
     artistStatement: optionalStringAt(
       data.artistStatement,
       'data.artistStatement',
+    ),
+    localizedTitle: optionalStringAt(
+      data.localizedTitle,
+      'data.localizedTitle',
+    ),
+    localizedDescription: optionalStringAt(
+      data.localizedDescription,
+      'data.localizedDescription',
     ),
     editorialNote: optionalStringAt(data.editorialNote, 'data.editorialNote'),
     aiAnalysis: aiAnalysis

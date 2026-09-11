@@ -42,6 +42,13 @@ const lens = {
   vertexShader: `varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
   fragmentShader: `uniform sampler2D tDiffuse; uniform vec2 distortion; uniform vec3 backgroundColor; varying vec2 vUv; const vec2 CENTER=vec2(.5); void main(){vec2 p=2.0*(vUv-.5); vec2 q=(.88+distortion*dot(p,p))*p; vec2 uv=q*.5+.5; vec3 color=backgroundColor; if(uv.x>=0.0&&uv.x<=1.0&&uv.y>=0.0&&uv.y<=1.0){color=texture2D(tDiffuse,uv).rgb;} float dist=distance(vUv,CENTER); color*=1.0-.045*smoothstep(.28,.72,dist); gl_FragColor=vec4(color,1.0);}`,
 };
+
+// Cards are displayed smaller than their source canvas. This cap keeps the
+// fixed 48-card pool from reserving excessive CPU and GPU memory.
+const CARD_CANVAS_SCALE = 0.6;
+const CARD_CANVAS_WIDTH = 640 * CARD_CANVAS_SCALE;
+const CARD_CANVAS_HEIGHT = 740 * CARD_CANVAS_SCALE;
+const PIXEL_RATIO_CAP = 1.25;
 type CardSurface = {
   tileIndex: number;
   material: THREE.MeshBasicMaterial;
@@ -76,6 +83,7 @@ export default function Scene({
     itemsRef = useRef(items),
     hasMoreRef = useRef(hasMore),
     needMoreRef = useRef(onNeedMore),
+    wakeSceneRef = useRef<(() => void) | null>(null),
     applyItemsRef = useRef<((value: GalleryCard[]) => void) | null>(null),
     modeRef = useRef(mode),
     themeRef = useRef(theme),
@@ -98,6 +106,7 @@ export default function Scene({
   }, [items, hasMore, onNeedMore]);
   useEffect(() => {
     modeRef.current = mode;
+    wakeSceneRef.current?.();
   }, [mode]);
   useEffect(() => {
     themeRef.current = theme;
@@ -105,6 +114,7 @@ export default function Scene({
   }, [theme]);
   useEffect(() => {
     pausedRef.current = paused;
+    wakeSceneRef.current?.();
   }, [paused]);
   useLayoutEffect(() => {
     selectedTileRef.current = selectedTileIndex;
@@ -125,12 +135,12 @@ export default function Scene({
     if (!element) return;
     let renderer: THREE.WebGLRenderer;
     try {
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({ antialias: false });
     } catch {
       fail.current();
       return;
     }
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+    renderer.setPixelRatio(Math.min(devicePixelRatio, PIXEL_RATIO_CAP));
     renderer.setClearColor(getThemePalette(themeRef.current).surface);
     element.appendChild(renderer.domElement);
     const scene = new THREE.Scene(),
@@ -164,7 +174,11 @@ export default function Scene({
       distortionCurrent = initialDistortion,
       distortionFrom = initialDistortion,
       distortionTarget = initialDistortion,
-      distortionStartedAt = performance.now();
+      distortionStartedAt = performance.now(),
+      previousOffsetX = Number.NaN,
+      previousOffsetY = Number.NaN,
+      needsPicking = true;
+    let requestRender = () => {};
     const materials: THREE.Material[] = [],
       textures: THREE.Texture[] = [],
       cardSurfaces: CardSurface[] = [];
@@ -179,14 +193,18 @@ export default function Scene({
       let pendingImage: HTMLImageElement | undefined;
       const generation = createBindingGeneration();
       const canvas = document.createElement('canvas');
-      canvas.width = 640;
-      canvas.height = 740;
+      canvas.width = CARD_CANVAS_WIDTH;
+      canvas.height = CARD_CANVAS_HEIGHT;
       const ctx = canvas.getContext('2d')!;
+      ctx.scale(CARD_CANVAS_SCALE, CARD_CANVAS_SCALE);
       ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
+      ctx.imageSmoothingQuality = 'medium';
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
-      texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+      texture.anisotropy = Math.min(
+        2,
+        renderer.capabilities.getMaxAnisotropy(),
+      );
       textures.push(texture);
       let loadedImage: HTMLImageElement | undefined;
       const paint = (
@@ -284,6 +302,7 @@ export default function Scene({
                 selectedTileRef.current,
               ),
             );
+            requestRender();
           };
           img.src = work.sceneImageSrc;
         },
@@ -311,6 +330,7 @@ export default function Scene({
           isGalleryTileExtracted(surface.tileIndex, selectedTileRef.current),
         ),
       );
+      requestRender();
     };
     applyThemeRef.current = applyTheme;
     applyTheme(themeRef.current);
@@ -340,6 +360,8 @@ export default function Scene({
         const project = tile.userData.project as GalleryCard | undefined;
         tile.visible = !!project && (!visibleIds || visibleIds.has(project.id));
       });
+      needsPicking = true;
+      requestRender();
     };
     const bindTile = (tile: THREE.Mesh, index: number) => {
       const catalog = itemsRef.current;
@@ -359,6 +381,7 @@ export default function Scene({
       const visibleIds = visibleProjectIdsRef.current;
       tile.visible =
         !!project && (!visibleIds || visibleIds.includes(project.id));
+      needsPicking = true;
     };
     let prefetchedLength = -1;
     let lastPrefetchAt = -Infinity;
@@ -381,6 +404,9 @@ export default function Scene({
         );
         bindTile(tile, catalogIndexForCell(cell, { columns: cols, rows }));
       }
+      previousOffsetX = previousOffsetY = Number.NaN;
+      needsPicking = true;
+      requestRender();
     };
     applyItemsRef.current = applyItems;
     applyItems(itemsRef.current);
@@ -395,6 +421,8 @@ export default function Scene({
       baseCameraZ = cameraDistanceForAspect(camera.aspect);
       if (!dragging) camera.position.z = baseCameraZ;
       camera.updateProjectionMatrix();
+      needsPicking = true;
+      requestRender();
     };
     resize();
     const observer = new ResizeObserver(resize);
@@ -410,6 +438,8 @@ export default function Scene({
       const radialScale =
         GALLERY_BASE_SCALE + distortionCurrent * (x * x + y * y);
       pointer.set(x * radialScale, y * radialScale);
+      needsPicking = true;
+      requestRender();
     };
     const meshScreenRect = (mesh: THREE.Mesh) => {
       const halfWidth = (width - 0.012) / 2;
@@ -446,6 +476,7 @@ export default function Scene({
       vx = vy = 0;
       element.setPointerCapture(e.pointerId);
       element.classList.add('dragging');
+      requestRender();
     };
     const pointerMove = (e: PointerEvent) => {
       updatePointer(e.clientX, e.clientY);
@@ -464,12 +495,15 @@ export default function Scene({
       vy = dy;
       lastX = e.clientX;
       lastY = e.clientY;
+      requestRender();
     };
     const resetPointer = () => {
       down = false;
       dragging = false;
       element.classList.remove('dragging');
       if (reduced) vx = vy = 0;
+      needsPicking = true;
+      requestRender();
     };
     const pointerUp = (e: PointerEvent) => {
       const wasDragging = dragging;
@@ -499,6 +533,7 @@ export default function Scene({
       vy = e.deltaY * unit * 0.001;
       offsetX += vx;
       offsetY += vy;
+      requestRender();
     };
     const key = (e: KeyboardEvent) => {
       if (pausedRef.current) return;
@@ -511,6 +546,7 @@ export default function Scene({
       if (e.key === 'Home') {
         offsetX = offsetY = vx = vy = 0;
       }
+      if (e.key.startsWith('Arrow') || e.key === 'Home') requestRender();
       if ((e.key === 'Enter' || e.key === ' ') && selectRef.current) {
         e.preventDefault();
         scene.updateMatrixWorld();
@@ -556,8 +592,9 @@ export default function Scene({
     };
     renderer.domElement.addEventListener('webglcontextlost', lost);
     let previous = performance.now();
+    let hoveredMesh: THREE.Object3D | null = null;
     const frame = (now: number) => {
-      raf = requestAnimationFrame(frame);
+      raf = 0;
       const dt = Math.min((now - previous) / 1000, 0.05);
       previous = now;
       const targetCameraZ =
@@ -570,33 +607,40 @@ export default function Scene({
         vx *= Math.exp(-5 * dt);
         vy *= Math.exp(-5 * dt);
       }
-      tiles.forEach((tile) => {
-        tile.position.x = wrap(tile.userData.x + offsetX, cols * width);
-        tile.position.y = wrap(tile.userData.y + offsetY, rows * height);
-        const cell = virtualCellForOffset(
-          tile.userData as { row: number; column: number },
-          { x: offsetX / width, y: offsetY / height },
-          { columns: cols, rows },
-        );
-        const index = catalogIndexForCell(cell, { columns: cols, rows });
-        if (!pausedRef.current && index !== tile.userData.catalogIndex)
-          bindTile(tile, index);
-        if (
-          !pausedRef.current &&
-          shouldPrefetchCatalog(
-            index,
-            itemsRef.current.length,
-            hasMoreRef.current,
-          ) &&
-          prefetchedLength !== itemsRef.current.length &&
-          now - lastPrefetchAt >= 500 &&
-          needMoreRef.current
-        ) {
-          prefetchedLength = itemsRef.current.length;
-          lastPrefetchAt = now;
-          needMoreRef.current();
-        }
-      });
+      const gridChanged =
+        offsetX !== previousOffsetX || offsetY !== previousOffsetY;
+      if (gridChanged) {
+        previousOffsetX = offsetX;
+        previousOffsetY = offsetY;
+        needsPicking = true;
+        tiles.forEach((tile) => {
+          tile.position.x = wrap(tile.userData.x + offsetX, cols * width);
+          tile.position.y = wrap(tile.userData.y + offsetY, rows * height);
+          const cell = virtualCellForOffset(
+            tile.userData as { row: number; column: number },
+            { x: offsetX / width, y: offsetY / height },
+            { columns: cols, rows },
+          );
+          const index = catalogIndexForCell(cell, { columns: cols, rows });
+          if (!pausedRef.current && index !== tile.userData.catalogIndex)
+            bindTile(tile, index);
+          if (
+            !pausedRef.current &&
+            shouldPrefetchCatalog(
+              index,
+              itemsRef.current.length,
+              hasMoreRef.current,
+            ) &&
+            prefetchedLength !== itemsRef.current.length &&
+            now - lastPrefetchAt >= 500 &&
+            needMoreRef.current
+          ) {
+            prefetchedLength = itemsRef.current.length;
+            lastPrefetchAt = now;
+            needMoreRef.current();
+          }
+        });
+      }
       const requestedDistortion = reduced
         ? 0
         : distortionForViewport(modeRef.current, camera.aspect);
@@ -628,11 +672,16 @@ export default function Scene({
       pointer.set(x * radialScale, y * radialScale);
       scene.updateMatrixWorld();
       camera.updateMatrixWorld();
-      raycaster.setFromCamera(pointer, camera);
+      if (needsPicking) raycaster.setFromCamera(pointer, camera);
       const hovered =
         pausedRef.current || down
           ? null
-          : firstVisibleRaycastHit(raycaster.intersectObjects(tiles))?.object;
+          : needsPicking
+            ? (firstVisibleRaycastHit(raycaster.intersectObjects(tiles))
+                ?.object ?? null)
+            : hoveredMesh;
+      needsPicking = false;
+      hoveredMesh = hovered;
       const nextSurface = hovered?.userData.surface as CardSurface | undefined;
       if (nextSurface !== hoveredSurface) {
         if (hoveredSurface)
@@ -655,16 +704,42 @@ export default function Scene({
           );
         hoveredSurface = nextSurface ?? null;
       }
+      let tileStillMoving = false;
       for (const tile of tiles) {
-        tile.position.z +=
-          ((tile === hovered ? 0.06 + 0.06 * depth : 0) - tile.position.z) *
-          (reduced ? 1 : 0.12);
+        const targetZ = tile === hovered ? 0.06 + 0.06 * depth : 0;
+        if (Math.abs(targetZ - tile.position.z) > 0.0005)
+          tileStillMoving = true;
+        tile.position.z += (targetZ - tile.position.z) * (reduced ? 1 : 0.12);
       }
       composer.render();
+      const cameraStillMoving =
+        Math.abs(targetCameraZ - camera.position.z) > 0.0005 ||
+        Math.abs(px * 0.17 * depth - camera.position.x) > 0.0005 ||
+        Math.abs(-py * 0.12 * depth - camera.position.y) > 0.0005;
+      const inertiaActive =
+        !pausedRef.current &&
+        !down &&
+        !reduced &&
+        (Math.abs(vx) > 0.0001 || Math.abs(vy) > 0.0001);
+      if (
+        inertiaActive ||
+        cameraStillMoving ||
+        tileStillMoving ||
+        transitionProgress < 1
+      )
+        requestRender();
     };
-    raf = requestAnimationFrame(frame);
+    requestRender = () => {
+      if (alive && !raf) raf = requestAnimationFrame(frame);
+    };
+    wakeSceneRef.current = () => {
+      needsPicking = true;
+      requestRender();
+    };
+    requestRender();
     return () => {
       alive = false;
+      wakeSceneRef.current = null;
       applyThemeRef.current = null;
       applyVisibilityRef.current = null;
       applyItemsRef.current = null;

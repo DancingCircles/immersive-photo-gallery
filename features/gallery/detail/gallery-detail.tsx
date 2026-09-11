@@ -25,6 +25,10 @@ export default function GalleryDetail({
   closeButtonRef: RefObject<HTMLButtonElement | null>;
   onClose: () => void;
 }) {
+  const displayTitle =
+    detail.status === 'ready' && detail.work.localizedTitle
+      ? detail.work.localizedTitle
+      : work.title;
   return (
     <dialog
       ref={panelRef}
@@ -39,7 +43,13 @@ export default function GalleryDetail({
         <span>{String(work.directoryPosition).padStart(2, '0')}</span>
       </header>
       <div className="gallery-detail__body">
-        <div ref={mediaRef} className="gallery-detail__media">
+        <div
+          ref={mediaRef}
+          className="gallery-detail__media"
+          style={{
+            aspectRatio: `${work.thumbnail.width} / ${work.thumbnail.height}`,
+          }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             ref={imageRef}
@@ -50,7 +60,7 @@ export default function GalleryDetail({
         <div ref={copyRef} className="gallery-detail__copy">
           <p>{work.category}</p>
           <h1>{work.photographerName}</h1>
-          <p>{work.title}</p>
+          <p>{displayTitle}</p>
           <p>{work.publishedAt}</p>
           <WorkDetailCopy detail={detail} />
         </div>

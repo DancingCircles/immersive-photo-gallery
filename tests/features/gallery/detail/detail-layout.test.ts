@@ -3,11 +3,24 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const stylesheet = [
-  readFileSync(new URL('../../../../styles/shell.css', import.meta.url), 'utf8'),
-  readFileSync(new URL('../../../../styles/responsive.css', import.meta.url), 'utf8'),
+  readFileSync(
+    new URL('../../../../styles/shell.css', import.meta.url),
+    'utf8',
+  ),
+  readFileSync(
+    new URL('../../../../styles/responsive.css', import.meta.url),
+    'utf8',
+  ),
 ].join('\n');
 const galleryPage = readFileSync(
   new URL('../../../../features/gallery/gallery-client.tsx', import.meta.url),
+  'utf8',
+);
+const detailPage = readFileSync(
+  new URL(
+    '../../../../features/gallery/detail/gallery-detail.tsx',
+    import.meta.url,
+  ),
   'utf8',
 );
 
@@ -23,17 +36,25 @@ void test('detail panel stays on the right half outside phone layouts', () => {
   assert.doesNotMatch(tabletRules, /\.gallery-detail\s*{[^}]*width:\s*100vw;/);
 });
 
-void test('closing leaves the flight image at rest and restores the source card early', () => {
+void test('closing restores the source card early', () => {
   assert.match(galleryPage, /state\.phase !== 'closing'/);
   assert.match(galleryPage, /dispatch\(\{ type: 'closed' \}\)/);
   assert.match(galleryPage, /state\.phase === 'closing'\s*\? null/);
   assert.doesNotMatch(galleryPage, /\.to\(\s*flightRef\.current/);
 });
 
-void test('detail image is compact, centered, and has no container background', () => {
+void test('detail image keeps its original aspect ratio in the upper area', () => {
   assert.match(
     stylesheet,
-    /\.gallery-detail__media\s*{[^}]*width:\s*min\(58%,\s*320px\);[^}]*justify-self:\s*center;[^}]*background:\s*transparent;/,
+    /\.gallery-detail__media\s*{[^}]*width:\s*min\(100%,\s*320px\);[^}]*height:\s*auto;[^}]*flex:\s*0\s+0\s+auto;[^}]*align-self:\s*center;[^}]*background:\s*transparent;/,
+  );
+  assert.match(
+    stylesheet,
+    /\.gallery-detail__media img\s*{[^}]*width:\s*100%;[^}]*height:\s*100%;[^}]*object-fit:\s*contain;[^}]*object-position:\s*center;/,
+  );
+  assert.match(
+    detailPage,
+    /aspectRatio:\s*`\$\{work\.thumbnail\.width\} \/ \$\{work\.thumbnail\.height\}`/,
   );
 });
 
@@ -44,11 +65,30 @@ void test('gallery details scroll inside the presentation panel after the image'
   );
 });
 
-void test('opening uses compositor transforms and swaps to the real image at rest', () => {
+void test('detail headings stay at a readable editorial scale', () => {
+  assert.match(
+    stylesheet,
+    /\.gallery-detail__copy h1\s*{[^}]*font-size:\s*clamp\(24px,\s*2\.25vw,\s*40px\);/,
+  );
+  assert.match(
+    stylesheet,
+    /\.work-detail-page__article > h1\s*{[^}]*font:\s*500 clamp\(22px,\s*2\.5vw,\s*32px\) \/ 1\.1/,
+  );
+});
+
+void test('opening uses a compositor frame while the complete image fades in', () => {
   assert.match(
     galleryPage,
     /\.to\(\s*flight,\s*{\s*x:\s*0,\s*y:\s*0,\s*scaleX:\s*1,\s*scaleY:\s*1,/,
   );
-  assert.match(galleryPage, /\.set\(detailImage, \{ opacity: 1 \}\)/);
+  assert.match(galleryPage, /className="gallery-flight-frame"/);
+  assert.match(
+    galleryPage,
+    /\.to\(\s*detailImage,\s*{\s*opacity: 1,\s*scale: 1,/,
+  );
+  assert.match(
+    stylesheet,
+    /\.gallery-flight-frame\s*{[^}]*border:\s*1px solid #171717;/,
+  );
   assert.match(galleryPage, /\.set\(flight, \{ display: 'none' \}\)/);
 });

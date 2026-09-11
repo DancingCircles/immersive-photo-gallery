@@ -33,6 +33,8 @@ export type AIAnalysis = {
 export type WorkDetail = WorkSummary & {
   image: ImageAsset;
   artistStatement?: string;
+  localizedTitle?: string;
+  localizedDescription?: string;
   editorialNote?: string;
   imageAnalysis?: string;
   aiAnalysis?: AIAnalysis;
