@@ -85,3 +85,11 @@ void test('the scene caps its texture and render-loop work for a growing catalog
   assert.match(scene, /if \(alive && !raf\) raf = requestAnimationFrame\(frame\)/);
   assert.match(scene, /const frame = \(now: number\) => \{\s*raf = 0;/);
 });
+
+void test('gallery cards do not add a gray backdrop behind the source image', () => {
+  const scene = readFileSync(
+    new URL('../../../../features/gallery/scene/gallery-scene.tsx', import.meta.url),
+    'utf8',
+  );
+  assert.doesNotMatch(scene, /palette\.mediaSurface/);
+});

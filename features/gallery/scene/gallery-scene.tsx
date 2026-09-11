@@ -242,8 +242,6 @@ export default function Scene({
         ctx.textAlign = 'right';
         ctx.fillText(p.title.toUpperCase().slice(0, 25), 616, 42);
         ctx.textAlign = 'left';
-        ctx.fillStyle = extracted ? palette.surface : palette.mediaSurface;
-        ctx.fillRect(90, 118, 460, 480);
         if (img && !extracted) {
           const scale = Math.min(460 / img.width, 480 / img.height),
             w = img.width * scale,
