@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { WorkDetail } from '@/domain/work/work';
 import type { WorkDetailState } from './use-work-detail';
+import PromptCopyBlocks from './prompt-copy-blocks';
 
 export function WorkAttribution({ work }: { work: WorkDetail }) {
   return (
@@ -51,30 +52,23 @@ export function WorkDetailCopy({ detail }: { detail: WorkDetailState }) {
         <details className="work-detail-copy__prompt-disclosure">
           <summary>
             <span>AI 生成提示词</span>
+            <span className="work-detail-copy__prompt-motif" aria-hidden="true">
+              <svg viewBox="0 0 40 40" fill="none">
+                <path d="M20 20C12.5 20 8 16.4 8 11.8c0-3.2 2.7-5.4 5.5-4.3C17.3 8.9 19 14.7 20 20Z" />
+                <path d="M20 20c0-7.5 3.6-12 8.2-12 3.2 0 5.4 2.7 4.3 5.5C31.1 17.3 25.3 19 20 20Z" />
+                <path d="M20 20c7.5 0 12 3.6 12 8.2 0 3.2-2.7 5.4-5.5 4.3C22.7 31.1 21 25.3 20 20Z" />
+                <path d="M20 20c0 7.5-3.6 12-8.2 12-3.2 0-5.4-2.7-4.3-5.5C8.9 22.7 14.7 21 20 20Z" />
+              </svg>
+            </span>
             <span className="work-detail-copy__prompt-arrow" aria-hidden="true">
               ↓
             </span>
           </summary>
-          <section aria-label="AI 生成提示词">
-            {work.promptZh && (
-              <>
-                <h3>中文提示词</h3>
-                <p>{work.promptZh}</p>
-              </>
-            )}
-            {work.promptEn && (
-              <>
-                <h3>English prompt</h3>
-                <p>{work.promptEn}</p>
-              </>
-            )}
-            {work.negativePrompt && (
-              <>
-                <h3>负面提示词</h3>
-                <p>{work.negativePrompt}</p>
-              </>
-            )}
-          </section>
+          <PromptCopyBlocks
+            promptZh={work.promptZh}
+            promptEn={work.promptEn}
+            negativePrompt={work.negativePrompt}
+          />
         </details>
       )}
     </div>
