@@ -16,6 +16,14 @@ void test('homepage introduces the pixel loading sequence before its content', (
   );
 });
 
+void test('opening loader only consumes the initial document visit once', () => {
+  const loader = source('features/daily-edit/opening-loader.tsx');
+
+  assert.match(loader, /let openingStatus:/);
+  assert.match(loader, /openingStatus === 'shown'/);
+  assert.match(loader, /openingStatus = 'shown'/);
+});
+
 void test('opening loader counts from zero to one hundred with a reduced-motion fallback', () => {
   const loader = source('features/daily-edit/opening-loader.tsx');
 

@@ -96,9 +96,13 @@ a {
 .gallery-detail__body {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   align-content: start;
   gap: clamp(26px, 3vw, 46px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding-right: 6px;
 }
 .gallery-detail__media {
   position: relative;
@@ -162,6 +166,9 @@ a {
 .gallery-detail__close:hover {
   background: #080808;
   color: #fff;
+}
+.gallery-detail .work-detail-copy {
+  grid-column: 1 / -1;
 }
 .gallery-flight {
   position: fixed;

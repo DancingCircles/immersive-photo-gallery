@@ -8,9 +8,10 @@ export function WorkDetailCopy({ detail }: { detail: WorkDetailState }) {
   if (detail.status !== 'ready') return null;
   const work = detail.work;
   return (
-    <div style={{ gridColumn: '1 / -1', textTransform: 'none', lineHeight: 1.6 }}>
-      {work.artistStatement && <section aria-label="摄影师自述"><h2>摄影师自述</h2><p>{work.artistStatement}</p></section>}
+    <div className="work-detail-copy">
+      {work.artistStatement && <section aria-label="图片说明"><h2>图片说明</h2><p>{work.artistStatement}</p></section>}
       {work.editorialNote && <section aria-label="编辑推荐"><h2>编辑推荐</h2><p>{work.editorialNote}</p></section>}
+      {work.imageAnalysis && <section aria-label="AI 图像解读"><h2>AI 图像解读</h2><p>{work.imageAnalysis}</p></section>}
       {work.aiAnalysis && <section aria-label="AI 分析"><h2>AI 分析</h2><p>{work.aiAnalysis.content}</p></section>}
       <p>{work.attribution.creditLine} · <a href={work.attribution.sourceUrl} target="_blank" rel="noreferrer">作品来源</a> · {work.attribution.licenseName}</p>
     </div>

@@ -35,6 +35,11 @@ function optionalStringAt(value: unknown, path: string): string | undefined {
   return stringAt(value, path);
 }
 
+function optionalNonEmptyStringAt(value: unknown, path: string): string | undefined {
+  if (value === undefined || value === '') return undefined;
+  return stringAt(value, path);
+}
+
 function numberAt(value: unknown, path: string): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) invalid(path);
   return value;
@@ -128,6 +133,7 @@ export function decodeWorkDetail(input: unknown): WorkDetail {
   if (isGoWork(data)) {
     const attribution = objectAt(data.attribution, 'data.attribution');
     const summary = decodeGoWorkSummaryAt(data, 'data');
+    const analysis = objectAt(data.analysis, 'data.analysis');
     const licenseUrl = optionalStringAt(
       attribution.licenseUrl,
       'data.attribution.licenseUrl',
@@ -140,6 +146,7 @@ export function decodeWorkDetail(input: unknown): WorkDetail {
         summary.thumbnail.alt,
       ),
       artistStatement: optionalStringAt(data.description, 'data.description'),
+      imageAnalysis: optionalNonEmptyStringAt(analysis.summary, 'data.analysis.summary'),
       attribution: {
         sourceUrl: stringAt(
           attribution.sourceUrl,

@@ -34,6 +34,7 @@ export type WorkDetail = WorkSummary & {
   image: ImageAsset;
   artistStatement?: string;
   editorialNote?: string;
+  imageAnalysis?: string;
   aiAnalysis?: AIAnalysis;
   attribution: Attribution;
 };

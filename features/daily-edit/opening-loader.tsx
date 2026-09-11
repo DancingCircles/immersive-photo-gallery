@@ -6,6 +6,10 @@ const COLUMN_COUNT = 24;
 const LOADING_DURATION = 2400;
 const EXIT_DURATION = 420;
 
+// Module state outlives App Router transitions but resets on a document reload.
+// "playing" keeps React Strict Mode's development remount from consuming it.
+let openingStatus: 'not-started' | 'playing' | 'shown' = 'not-started';
+
 const PINK_PIXEL_PALETTE = [
   '#e3a0ad', '#ecad9a', '#d794c7', '#e69aa3',
   '#dda0bf', '#f0b19a', '#d98e98', '#e0a0cc',
@@ -37,7 +41,7 @@ function createPixelPattern(): Pixel[] {
 export default function OpeningLoader() {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<'loading' | 'exiting'>('loading');
-  const [visible, setVisible] = useState(true);
+  const [visible, setVisible] = useState(() => openingStatus !== 'shown');
   const [pixels, setPixels] = useState<Pixel[]>([]);
 
   useEffect(() => {
@@ -45,6 +49,8 @@ export default function OpeningLoader() {
   }, []);
 
   useEffect(() => {
+    if (openingStatus === 'shown') return;
+    openingStatus = 'playing';
     let frame = 0;
     let exitTimer = 0;
     let removeTimer = 0;
@@ -53,13 +59,19 @@ export default function OpeningLoader() {
     const leave = () => {
       setProgress(100);
       setPhase('exiting');
-      removeTimer = window.setTimeout(() => setVisible(false), EXIT_DURATION);
+      removeTimer = window.setTimeout(() => {
+        openingStatus = 'shown';
+        setVisible(false);
+      }, EXIT_DURATION);
     };
 
     if (reduceMotion) {
       frame = window.requestAnimationFrame(() => {
         setProgress(100);
-        removeTimer = window.setTimeout(() => setVisible(false), 120);
+        removeTimer = window.setTimeout(() => {
+          openingStatus = 'shown';
+          setVisible(false);
+        }, 120);
       });
     } else {
       let startedAt: number | undefined;

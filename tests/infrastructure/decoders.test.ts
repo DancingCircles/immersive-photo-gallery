@@ -128,6 +128,7 @@ void test('decoders adapt the current Go API work and recommendation responses',
   });
   assert.equal(detail.image.src, '/v1/works/work-01/image');
   assert.equal(detail.artistStatement, 'A quiet study of light.');
+  assert.equal(detail.imageAnalysis, 'Strong diagonal balance.');
   assert.equal(detail.attribution.creditLine, 'Photographer 01');
 });
 

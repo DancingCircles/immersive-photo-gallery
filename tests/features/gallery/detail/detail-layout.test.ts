@@ -37,6 +37,13 @@ void test('detail image is compact, centered, and has no container background', 
   );
 });
 
+void test('gallery details scroll inside the presentation panel after the image', () => {
+  assert.match(
+    stylesheet,
+    /\.gallery-detail__body\s*{[^}]*overflow-y:\s*auto;/,
+  );
+});
+
 void test('opening uses compositor transforms and swaps to the real image at rest', () => {
   assert.match(
     galleryPage,
