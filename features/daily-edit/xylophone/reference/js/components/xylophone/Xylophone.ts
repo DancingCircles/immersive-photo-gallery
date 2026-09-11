@@ -103,9 +103,10 @@ export class Xylophone {
   private geometryHeight = 1 // bar bbox height — the helix's vertical pitch
 
   // strike (audio + swing)
-  private audio?: XylophoneAudio
+  private readonly audio: XylophoneAudio
   private muted = false
   private lastHitIndex = -1
+  private lastAudioHitIndex = -1
   private readonly raycast = new Raycaster()
   private readonly hitWorkspace = createHitWorkspace()
 
@@ -117,6 +118,17 @@ export class Xylophone {
   private readonly scrollQuat = new Quaternion()
 
   /* --------------------------------- public --------------------------------- */
+  constructor() {
+    this.audio = new XylophoneAudio({
+      url: audioUrl,
+      count: XYLOPHONE.count,
+      baseFreq: AUDIO.baseFreq,
+      octaveSpan: AUDIO.octaveSpan,
+    })
+    this.audio.setMuted(this.muted)
+    void this.audio.load()
+  }
+
   /** Shares the fluid's velocity uniform by reference — no per-frame copy. */
   setFluid(fluidVelocity: { value: Texture | null }) {
     this.uniforms.u_tFluid = fluidVelocity
@@ -125,7 +137,7 @@ export class Xylophone {
   /** Held here too: the toggle can be set before the model (and its audio) finish loading. */
   setMuted(muted: boolean) {
     this.muted = muted
-    this.audio?.setMuted(muted)
+    this.audio.setMuted(muted)
   }
 
   /* --------------------------------- update --------------------------------- */
@@ -172,10 +184,17 @@ export class Xylophone {
     if (index !== -1 && index !== this.lastHitIndex) {
       this.instances.aStrikeTime.setX(index, Properties.time)
       this.instances.aStrikeTime.needsUpdate = true
-      this.audio?.playNote(index)
     }
 
     this.lastHitIndex = index
+    if (index === -1) {
+      this.lastAudioHitIndex = -1
+      return
+    }
+
+    if (index !== this.lastAudioHitIndex && this.audio.playNote(index)) {
+      this.lastAudioHitIndex = index
+    }
   }
 
   /* ---------------------------------- load ---------------------------------- */
@@ -218,14 +237,6 @@ export class Xylophone {
     this.mesh.layers.enable(GLASS_LAYER) // also rendered in isolation into the view-normal buffer (SSAO)
     this.group.add(this.mesh)
 
-    this.audio = new XylophoneAudio({
-      url: audioUrl,
-      count: XYLOPHONE.count,
-      baseFreq: AUDIO.baseFreq,
-      octaveSpan: AUDIO.octaveSpan,
-    })
-    this.audio.setMuted(this.muted)
-    void this.audio.load()
   }
 
   async load() {
@@ -244,7 +255,7 @@ export class Xylophone {
   }
 
   dispose() {
-    this.audio?.dispose()
+    this.audio.dispose()
     this.instances?.geometry.dispose()
     this.material?.dispose()
     this.uniforms.u_tGradient.value?.dispose()

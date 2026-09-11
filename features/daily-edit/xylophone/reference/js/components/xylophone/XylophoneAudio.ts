@@ -162,21 +162,25 @@ export class XylophoneAudio {
       this.master.connect(this.ctx.destination)
 
       this.silentEl = createSilentAudioElement()
+      this.addGestureListeners()
 
       const res = await fetch(this.url)
       if (!res.ok) throw new Error(`status ${res.status}`)
       this.buffer = await this.ctx.decodeAudioData(await res.arrayBuffer())
 
-      this.addGestureListeners()
     } catch (err) {
+      this.removeGestureListeners()
       this.disable(`failed to load sample "${this.url}"`, err)
     }
   }
 
-  playNote(index: number) {
-    if (this.muted || this.disabled || !this.ctx || !this.buffer || !this.master) return
-    if (this.activeVoices >= this.maxVoices) return
-    this.resume()
+  playNote(index: number): boolean {
+    if (this.muted || this.disabled || !this.ctx || !this.buffer || !this.master) return false
+    if (this.activeVoices >= this.maxVoices) return false
+    if (this.ctx.state !== "running") {
+      this.resume()
+      return false
+    }
 
     const src = this.ctx.createBufferSource()
     src.buffer = this.buffer
@@ -194,6 +198,7 @@ export class XylophoneAudio {
 
     src.start()
     this.activeVoices++
+    return true
   }
 
   dispose() {

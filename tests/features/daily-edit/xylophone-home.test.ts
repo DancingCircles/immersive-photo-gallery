@@ -56,6 +56,35 @@ void test('xylophone background and user-controlled audio modules are present', 
   );
 });
 
+void test('xylophone runtime is loaded only after the homepage reaches the browser', () => {
+  const background = source('features/daily-edit/xylophone-background.tsx');
+
+  assert.match(
+    background,
+    /void import\('\.\/xylophone\/xylophone-runtime'\)/,
+  );
+  assert.doesNotMatch(
+    background,
+    /^import\s+\{\s*XylophoneRuntime\s*\}/m,
+  );
+});
+
+void test('xylophone audio is prepared before its sample fetch and retries a bar after it becomes ready', () => {
+  const audio = source(
+    'features/daily-edit/xylophone/reference/js/components/xylophone/XylophoneAudio.ts',
+  );
+  const xylophone = source(
+    'features/daily-edit/xylophone/reference/js/components/xylophone/Xylophone.ts',
+  );
+
+  assert.ok(
+    audio.indexOf('this.addGestureListeners()') < audio.indexOf('const res = await fetch(this.url)'),
+  );
+  assert.match(audio, /playNote\(index: number\): boolean/);
+  assert.match(xylophone, /lastAudioHitIndex/);
+  assert.match(xylophone, /this\.audio\.playNote\(index\)/);
+});
+
 void test('background styles stay pale, fixed, and non-interactive', () => {
   const styles = source('styles/daily-edit.css');
 

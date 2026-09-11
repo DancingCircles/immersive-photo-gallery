@@ -24,6 +24,7 @@ import XylophoneBackground, {
 } from './xylophone-background';
 import XylophoneSoundToggle from './xylophone-sound-toggle';
 import SiteNav from '@/components/navigation/site-nav';
+import OpeningLoader from './opening-loader';
 
 const snapshot = ({ left, top, width, height }: DOMRect): RectSnapshot => ({
   left,
@@ -390,6 +391,7 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
 
   return (
     <>
+      <OpeningLoader />
       <SmoothScroll>
         <div className="featured-home" data-detail-open={selected !== null}>
           <XylophoneBackground ref={xylophoneRef} soundEnabled={soundEnabled} />
