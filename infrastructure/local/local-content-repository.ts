@@ -2,7 +2,7 @@ import { ContentError } from '../../application/errors/content-error.ts';
 import type { ContentRepository, CursorPage, ListWorksInput } from '../../application/ports/content-repository.ts';
 import type { DailyEdit } from '../../domain/daily-edit/daily-edit.ts';
 import type { WorkDetail, WorkSummary } from '../../domain/work/work.ts';
-import { dailyFixtureWorkIDs, workFixtures } from './fixtures.ts';
+import { dailyFixtureWorkIDs, fixtureSearchTags, workFixtures } from './fixtures.ts';
 
 const MAX_LIMIT = 60;
 
@@ -30,9 +30,22 @@ function matches(work: WorkDetail, query: string | undefined) {
   if (!query) return true;
   const term = query.trim().toLocaleLowerCase();
   if (!term) return true;
-  return [work.title, work.photographerName, work.category, work.publishedAt].some((value) =>
-    value.toLocaleLowerCase().includes(term),
-  );
+  return [
+    work.title,
+    work.photographerName,
+    work.category,
+    work.publishedAt,
+    ... (fixtureSearchTags[work.id] ?? []),
+    work.artistStatement,
+    work.localizedTitle,
+    work.localizedDescription,
+    work.promptZh,
+    work.promptEn,
+    work.negativePrompt,
+    work.imageAnalysis,
+    work.attribution.creditLine,
+    work.attribution.licenseName,
+  ].some((value) => value?.toLocaleLowerCase().includes(term));
 }
 
 export const localContentRepository: ContentRepository = {

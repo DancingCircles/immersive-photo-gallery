@@ -567,6 +567,32 @@ const snapshotRecords = [
   },
 ] as const;
 
+// Keep every tag from the backend snapshot searchable in local/demo mode. The
+// compact WorkDetail model intentionally exposes only the primary category,
+// but the static gallery should behave like the live catalogue when searching.
+export const fixtureSearchTags: Readonly<Record<string, readonly string[]>> = {
+  'work-3f002a09-3fd2-455e-8db0-95c1c8cff716': ['嫩叶', '树皮', '暗调', '蓝光', '微距', '特写'],
+  'work-aa06bfa3-728c-4a8c-b749-0aaf77c8cc96': ['鸟类', '生态摄影', '侧身', '虚化背景', '高饱和', '竖幅'],
+  'work-852ba582-c184-4b28-94ab-2973a990c618': ['自动售货机', '并置', '镜像', '野生动物', '可口可乐', '街头'],
+  'work-f31988b5-8098-49ea-bb8f-faadf68cbffb': ['竖幅', '椰林', '天空', '小路', '对称', '热带', '风光'],
+  'work-baa7432e-6609-45c9-b88f-0f8301707255': ['马群', '逆光', '林间', '草地', '光束', '横画幅', '暖色调'],
+  'work-dade41a4-559e-4b5b-8030-5352f97f76dc': ['枯枝', '球形花序', '浅景深', '暖调', '竖幅', '自然微观', '虚实对比'],
+  'work-fef7c1fc-4e39-4437-9915-f652f65d4db8': ['枯叶', '逆光', '浅景深', '暖橙色调', '自然', '竖幅'],
+  'work-2d3b78b1-afb9-48f9-8a97-a036514b30c2': ['猛禽', '生态摄影', '横构图', '绿色背景', '虚化光斑', '自然光', '枝干'],
+  'work-4a477a1e-a2e3-4edc-b581-5830afba1dc6': ['植物', '干花', '放射构图', '浅景深', '暖色调', '微距', '冬季'],
+  'work-ee98fa87-ccff-4888-998b-c05c740d713d': ['植物微距', '干枯花序', '暖色调', '浅景深', '密集肌理', '横画幅'],
+  'work-2d89851a-de98-42f6-bde3-39fbc88f08bd': ['人物', '森林', '伪装服', '逆光', '竖幅', '绿色'],
+  'work-3b318f84-027a-4dda-b384-89ecb40eefb9': ['植物', '粉紫色调', '深色背景', '竖构图', '线条', '花苞', '氛围'],
+  'work-0c5ae80b-8d1d-4750-b0ba-3d0d524b913e': ['植物', '水珠', '红叶', '绿叶', '暗背景', '对角线构图', '竖幅'],
+  'work-727fb22d-41e0-4d3a-b04c-22f77f319ebf': ['长颈鹿', '动物', '竖幅', '蓝天', '棕白斑纹'],
+  'work-6adb628d-d6ba-455f-8b53-827787041266': ['鹦鹉', '花枝', '竖幅', '蓝天背景', '色彩对比', '生态摄影', '自然光'],
+  'work-a746ba31-e147-4080-b554-ad86eb6ea9bf': ['野生动物', '雄鹿', '生态摄影', '虚化前景', '岩石', '自然光', '横画幅'],
+  'work-ece66b30-a867-4c5a-a36a-262260b44272': ['马群', '晨雾', '草原', '粉色天空', '宽画幅', '自然', '群像'],
+  'work-478174b9-175a-4fe7-bd72-acf5aedd7e4d': ['生态摄影', '喂食瞬间', '暖色调', '浅景深', '横向构图', '手与鸟'],
+  'work-df46432c-a11b-4e9f-9129-97b51bc242df': ['野生动物', '鹿', '林间', '框景', '纵深', '绿调', '竖幅'],
+  'work-c7ef5f0e-eb2c-4a9c-9f1a-53ea3b68141a': ['大象', '野生动物', '扬沙', '自然', '横向构图', '绿色背景'],
+};
+
 export const dailyFixtureWorkIDs = [
   'work-2d3b78b1-afb9-48f9-8a97-a036514b30c2',
   'work-478174b9-175a-4fe7-bd72-acf5aedd7e4d',

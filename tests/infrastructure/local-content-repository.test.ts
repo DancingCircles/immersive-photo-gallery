@@ -27,8 +27,8 @@ void test('empty queries return the complete first page', async () => {
   assert.equal(result.items[0].id, 'work-3f002a09-3fd2-455e-8db0-95c1c8cff716');
 });
 
-void test('search is case insensitive across title, photographer, category, and year', async () => {
-  for (const query of ['WILDLIFE-PHOTOGRAPHY-IN-KERALA', 'priyaariyani1982', '猛禽', '2026']) {
+void test('search is case insensitive across metadata, all tags, and year', async () => {
+  for (const query of ['WILDLIFE-PHOTOGRAPHY-IN-KERALA', 'priyaariyani1982', '猛禽', '自然光', '2026']) {
     const result = await localContentRepository.listWorks({ limit: 60, query });
     assert.ok(result.items.length > 0, query);
   }
