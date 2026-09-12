@@ -33,6 +33,7 @@ export default function FeaturedDetail({
     detail.status === 'ready' && detail.work.localizedTitle
       ? detail.work.localizedTitle
       : work.displayTitle;
+  const image = detail.status === 'ready' ? detail.work.image : work.thumbnail;
   return (
     <dialog
       ref={panelRef}
@@ -50,7 +51,7 @@ export default function FeaturedDetail({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             ref={imageRef}
-            src={work.thumbnail.src}
+            src={image.src}
             alt=""
             onError={(event) => {
               event.currentTarget.hidden = true;

@@ -23,30 +23,40 @@ function listParams(input: ListWorksInput) {
   return params;
 }
 
-function resolveImageAsset(asset: ImageAsset, baseUrl: string): ImageAsset {
-  try {
-    return { ...asset, src: new URL(asset.src, baseUrl).toString() };
-  } catch {
-    return asset;
-  }
-}
+type MediaVariant = 'image' | 'thumbnail';
 
-function resolveWorkSummary(work: WorkSummary, baseUrl: string): WorkSummary {
-  return { ...work, thumbnail: resolveImageAsset(work.thumbnail, baseUrl) };
-}
-
-function resolveWorkDetail(work: WorkDetail, baseUrl: string): WorkDetail {
+function resolveImageAsset(
+  asset: ImageAsset,
+  workID: string,
+  variant: MediaVariant,
+): ImageAsset {
+  // The API base URL is server-only. Return a stable same-origin path so a
+  // browser never needs access to an internal API host or its credentials.
   return {
-    ...work,
-    thumbnail: resolveImageAsset(work.thumbnail, baseUrl),
-    image: resolveImageAsset(work.image, baseUrl),
+    ...asset,
+    src: `/api/content/media/${encodeURIComponent(workID)}/${variant}`,
   };
 }
 
-function resolveDailyEdit(edit: DailyEdit, baseUrl: string): DailyEdit {
+function resolveWorkSummary(work: WorkSummary): WorkSummary {
+  return {
+    ...work,
+    thumbnail: resolveImageAsset(work.thumbnail, work.id, 'thumbnail'),
+  };
+}
+
+function resolveWorkDetail(work: WorkDetail): WorkDetail {
+  return {
+    ...work,
+    thumbnail: resolveImageAsset(work.thumbnail, work.id, 'thumbnail'),
+    image: resolveImageAsset(work.image, work.id, 'image'),
+  };
+}
+
+function resolveDailyEdit(edit: DailyEdit): DailyEdit {
   return {
     ...edit,
-    works: edit.works.map((work) => resolveWorkSummary(work, baseUrl)),
+    works: edit.works.map(resolveWorkSummary),
   };
 }
 
@@ -67,7 +77,7 @@ export function createHttpContentRepository({
       );
       return {
         ...page,
-        items: page.items.map((work) => resolveWorkSummary(work, baseUrl)),
+        items: page.items.map(resolveWorkSummary),
       };
     },
     async getWork(id): Promise<WorkDetail> {
@@ -75,7 +85,6 @@ export function createHttpContentRepository({
         decodeWorkDetail(
           await client.get(`/v1/works/${encodeURIComponent(id)}`),
         ),
-        baseUrl,
       );
     },
     async getDailyEdit(date): Promise<DailyEdit> {
@@ -83,7 +92,6 @@ export function createHttpContentRepository({
         decodeDailyEdit(
           await client.get(`/v1/recommendations/${encodeURIComponent(date)}`),
         ),
-        baseUrl,
       );
     },
   };

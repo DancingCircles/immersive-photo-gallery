@@ -10,6 +10,27 @@ export type ContentSourceEnvironment = {
   CONTENT_API_TIMEOUT_MS?: string;
 };
 
+/** Returns the server-only upstream used by the same-origin content routes. */
+export function getContentApiBaseUrl(
+  env: ContentSourceEnvironment = process.env,
+): string {
+  const source = env.CONTENT_SOURCE?.trim().toLowerCase() || 'local';
+  if (source !== 'http') {
+    throw new ContentError(
+      'CONTENT_MEDIA_UNAVAILABLE',
+      'Remote content media is unavailable for the selected source',
+      { status: 404 },
+    );
+  }
+  const baseUrl = env.CONTENT_API_BASE_URL?.trim();
+  if (!baseUrl) {
+    throw new ContentError('CONTENT_API_NOT_CONFIGURED', 'Content API is not configured', {
+      status: 503,
+    });
+  }
+  return baseUrl;
+}
+
 /** Selects the server-side repository without silently changing data sources. */
 export function getContentRepository(
   env: ContentSourceEnvironment = process.env,
@@ -17,15 +38,9 @@ export function getContentRepository(
   const source = env.CONTENT_SOURCE?.trim().toLowerCase() || 'local';
   if (source === 'local') return localContentRepository;
   if (source === 'http') {
-    const baseUrl = env.CONTENT_API_BASE_URL?.trim();
-    if (!baseUrl) {
-      throw new ContentError('CONTENT_API_NOT_CONFIGURED', 'Content API is not configured', {
-        status: 503,
-      });
-    }
     const parsedTimeout = Number(env.CONTENT_API_TIMEOUT_MS);
     return createHttpContentRepository({
-      baseUrl,
+      baseUrl: getContentApiBaseUrl(env),
       timeoutMs: Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : undefined,
     });
   }

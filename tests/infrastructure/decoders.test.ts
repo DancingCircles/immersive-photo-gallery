@@ -137,6 +137,25 @@ void test('decoders allow optional AI analysis to be absent', () => {
   assert.equal(decodeWorkDetail({ data: withoutAi }).aiAnalysis, undefined);
 });
 
+void test('Go detail decoder falls back to the public photographer when creator metadata is blank', () => {
+  const work = decodeWorkDetail({
+    data: {
+      id: 'work-01',
+      title: 'Untitled 01',
+      image: { url: '/v1/works/work-01/image', width: 1200, height: 900, format: 'webp' },
+      photographer: 'Unknown photographer',
+      publishedAt: '2026-01-01T00:00:00Z',
+      analysis: { tags: [] },
+      attribution: {
+        creatorName: '',
+        sourceUrl: 'https://commons.example.test/work-01',
+        licenseName: 'CC BY 4.0',
+      },
+    },
+  });
+  assert.equal(work.attribution.creditLine, 'Unknown photographer');
+});
+
 void test('decoders reject missing required fields with a field path', () => {
   assert.throws(
     () =>

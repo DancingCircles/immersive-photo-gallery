@@ -32,6 +32,7 @@ export default function GalleryDetail({
     detail.status === 'ready' && detail.work.localizedTitle
       ? detail.work.localizedTitle
       : work.title;
+  const image = detail.status === 'ready' ? detail.work.image : work.thumbnail;
   return (
     <dialog
       ref={panelRef}
@@ -51,13 +52,15 @@ export default function GalleryDetail({
             ref={mediaRef}
             className="gallery-detail__media-frame"
             style={{
+              // Preserve the card geometry while the higher-resolution image
+              // replaces its thumbnail once the detail request completes.
               aspectRatio: `${work.thumbnail.width} / ${work.thumbnail.height}`,
             }}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               ref={imageRef}
-              src={work.thumbnail.src}
+              src={image.src}
               alt={`${work.title}，${work.photographerName}`}
             />
           </div>

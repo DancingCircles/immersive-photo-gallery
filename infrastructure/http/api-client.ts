@@ -37,7 +37,10 @@ export function createApiClient({
           headers: { Accept: 'application/json' },
         });
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
+        // This signal is used only for the request timeout. Native fetch
+        // rejects AbortSignal.timeout() with TimeoutError, while some mocks
+        // and runtimes use AbortError instead.
+        if (signal.aborted) {
           throw new ContentError('CONTENT_REQUEST_TIMEOUT', 'Content API request timed out', {
             status: 504,
             cause: error,

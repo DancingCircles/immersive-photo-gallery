@@ -177,10 +177,11 @@ export function decodeWorkDetail(input: unknown): WorkDetail {
           'data.attribution.licenseName',
         ),
         ...(licenseUrl ? { licenseUrl } : {}),
-        creditLine: stringAt(
-          attribution.creatorName,
-          'data.attribution.creatorName',
-        ),
+        creditLine:
+          optionalNonEmptyStringAt(
+            attribution.creatorName,
+            'data.attribution.creatorName',
+          ) ?? summary.photographerName,
       },
     };
   }

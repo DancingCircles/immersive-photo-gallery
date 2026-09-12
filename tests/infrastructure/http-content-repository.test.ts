@@ -52,7 +52,7 @@ void test('HTTP repository sends Go API query parameters', async () => {
   );
 });
 
-void test('HTTP repository resolves relative image URLs against the Go API origin', async () => {
+void test('HTTP repository returns same-origin media URLs for Go API images', async () => {
   const repository = createHttpContentRepository({
     baseUrl: 'https://api.example.test/root/',
     fetchImpl: async () =>
@@ -81,7 +81,7 @@ void test('HTTP repository resolves relative image URLs against the Go API origi
 
   assert.equal(
     page.items[0].thumbnail.src,
-    'https://api.example.test/v1/works/work-01/image',
+    '/api/content/media/work-01/thumbnail',
   );
 });
 
@@ -110,14 +110,14 @@ void test('HTTP repository maps non 2xx errors and preserves request id', async 
   );
 });
 
-void test('HTTP repository aborts timed out requests', async () => {
+void test('HTTP repository maps native timeout aborts to a timeout error', async () => {
   const repository = createHttpContentRepository({
     baseUrl: 'https://api.example.test',
     timeoutMs: 5,
     fetchImpl: async (_input, init) =>
       new Promise<Response>((_resolve, reject) => {
         init?.signal?.addEventListener('abort', () =>
-          reject(new DOMException('Timed out', 'AbortError')),
+          reject(new DOMException('Timed out', 'TimeoutError')),
         );
       }),
   });
