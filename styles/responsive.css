@@ -1,4 +1,13 @@
 @media (max-width: 700px) {
+  .background-music {
+    top: 14px;
+    left: 14px;
+  }
+
+  .background-music__volume {
+    width: 66px;
+  }
+
   .site-nav {
     top: 14px;
     right: 14px;
