@@ -333,7 +333,7 @@
   padding: clamp(32px, 6vw, 96px);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: safe center;
   gap: 14px;
 }
 

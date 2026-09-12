@@ -80,6 +80,9 @@ void test('the scene updates items separately from its fixed renderer lifetime',
   assert.match(scene, /applyItemsRef\.current\?\.\(items\)/);
   assert.match(scene, /renderer\.domElement\.remove\(\);\s*};\s*}, \[\]\)/);
   assert.match(scene, /cols = 8,\s*rows = 6/);
+  assert.match(scene, /searchModeRef = useRef\(searchMode\)/);
+  assert.match(scene, /searchModeRef\.current\s*\?\s*\{ columns: searchTileCount\(catalog\), rows: 1 \}/);
+  assert.match(scene, /tile\.userData\.y = 0/);
   assert.equal((scene.match(/new THREE\.CanvasTexture/g) ?? []).length, 1);
 });
 

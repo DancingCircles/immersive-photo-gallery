@@ -63,6 +63,7 @@ export default function Scene({
   theme,
   paused = false,
   selectedTileIndex = null,
+  searchMode = false,
   visibleProjectIds,
   hasMore = false,
   onNeedMore,
@@ -74,6 +75,7 @@ export default function Scene({
   theme: ThemeMode;
   paused?: boolean;
   selectedTileIndex?: number | null;
+  searchMode?: boolean;
   visibleProjectIds?: readonly string[];
   hasMore?: boolean;
   onNeedMore?: () => void;
@@ -90,6 +92,7 @@ export default function Scene({
     themeRef = useRef(theme),
     pausedRef = useRef(paused),
     selectedTileRef = useRef(selectedTileIndex),
+    searchModeRef = useRef(searchMode),
     visibleProjectIdsRef = useRef<readonly string[] | undefined>(
       visibleProjectIds,
     ),
@@ -121,6 +124,11 @@ export default function Scene({
     selectedTileRef.current = selectedTileIndex;
     applyThemeRef.current?.(themeRef.current);
   }, [selectedTileIndex]);
+  useLayoutEffect(() => {
+    searchModeRef.current = searchMode;
+    applyItemsRef.current?.(itemsRef.current);
+    wakeSceneRef.current?.();
+  }, [searchMode]);
   useLayoutEffect(() => {
     visibleProjectIdsRef.current = visibleProjectIds;
     applyVisibilityRef.current?.(visibleProjectIds);
@@ -353,6 +361,12 @@ export default function Scene({
         scene.add(mesh);
         tiles.push(mesh);
       }
+    const searchTileCount = (catalog: readonly GalleryCard[]) =>
+      Math.min(Math.max(catalog.length, 1), tiles.length);
+    const layoutFor = (catalog: readonly GalleryCard[]) =>
+      searchModeRef.current
+        ? { columns: searchTileCount(catalog), rows: 1 }
+        : { columns: cols, rows };
     const applyVisibility = (projectIds: readonly string[] | undefined) => {
       const visibleIds = projectIds ? new Set(projectIds) : null;
       tiles.forEach((tile) => {
@@ -362,9 +376,9 @@ export default function Scene({
       needsPicking = true;
       requestRender();
     };
-    const bindTile = (tile: THREE.Mesh, index: number) => {
+    const bindTile = (tile: THREE.Mesh, index: number, hidden = false) => {
       const catalog = itemsRef.current;
-      const project = catalogItemForIndex(catalog, index);
+      const project = hidden ? undefined : catalogItemForIndex(catalog, index);
       const previousProject = tile.userData.project as GalleryCard | undefined;
       tile.userData.catalogIndex = index;
       tile.userData.project = project;
@@ -377,29 +391,48 @@ export default function Scene({
       }
       const visibleIds = visibleProjectIdsRef.current;
       tile.visible =
-        !!project && (!visibleIds || visibleIds.includes(project.id));
+        !hidden && !!project && (!visibleIds || visibleIds.includes(project.id));
       needsPicking = true;
     };
     let prefetchedLength = -1;
     let lastPrefetchAt = -Infinity;
+    let previousSearchMode = searchModeRef.current;
     const applyItems = (catalog: GalleryCard[]) => {
       // Appending a page preserves logical cells and all existing surface images.
       // A replaced search catalog starts at the first page without a renderer reset.
       const previousFirst = tiles[0]?.userData.catalogFirstId as
         | string
         | undefined;
-      if (previousFirst !== catalog[0]?.id) {
+      if (
+        previousSearchMode !== searchModeRef.current ||
+        previousFirst !== catalog[0]?.id
+      ) {
         offsetX = offsetY = vx = vy = 0;
         prefetchedLength = -1;
       }
+      previousSearchMode = searchModeRef.current;
+      const layout = layoutFor(catalog);
+      const searchCount = searchModeRef.current ? searchTileCount(catalog) : 0;
       for (const tile of tiles) {
         tile.userData.catalogFirstId = catalog[0]?.id;
+        if (searchModeRef.current) {
+          const tileIndex = tile.userData.tileIndex as number;
+          tile.userData.x =
+            (tileIndex - searchCount / 2 + 0.5) * width;
+          tile.userData.y = 0;
+          bindTile(tile, tileIndex, tileIndex >= searchCount);
+          continue;
+        }
         const cell = virtualCellForOffset(
           tile.userData as { row: number; column: number },
           { x: offsetX / width, y: offsetY / height },
-          { columns: cols, rows },
+          layout,
         );
-        bindTile(tile, catalogIndexForCell(cell, { columns: cols, rows }));
+        tile.userData.x =
+          (tile.userData.column - cols / 2 + 0.5) * width;
+        tile.userData.y =
+          (tile.userData.row - rows / 2 + 0.5) * height;
+        bindTile(tile, catalogIndexForCell(cell, layout));
       }
       previousOffsetX = previousOffsetY = Number.NaN;
       needsPicking = true;
@@ -610,15 +643,41 @@ export default function Scene({
         previousOffsetX = offsetX;
         previousOffsetY = offsetY;
         needsPicking = true;
+        const layout = layoutFor(itemsRef.current);
         tiles.forEach((tile) => {
-          tile.position.x = wrap(tile.userData.x + offsetX, cols * width);
-          tile.position.y = wrap(tile.userData.y + offsetY, rows * height);
+          tile.position.x = wrap(
+            tile.userData.x + offsetX,
+            layout.columns * width,
+          );
+          tile.position.y = wrap(
+            tile.userData.y + (searchModeRef.current ? 0 : offsetY),
+            layout.rows * height,
+          );
+          if (searchModeRef.current) {
+            const searchIndex = Math.floor(Math.abs(offsetX / width));
+            if (
+              !pausedRef.current &&
+              shouldPrefetchCatalog(
+                searchIndex,
+                itemsRef.current.length,
+                hasMoreRef.current,
+              ) &&
+              prefetchedLength !== itemsRef.current.length &&
+              now - lastPrefetchAt >= 500 &&
+              needMoreRef.current
+            ) {
+              prefetchedLength = itemsRef.current.length;
+              lastPrefetchAt = now;
+              needMoreRef.current();
+            }
+            return;
+          }
           const cell = virtualCellForOffset(
             tile.userData as { row: number; column: number },
             { x: offsetX / width, y: offsetY / height },
-            { columns: cols, rows },
+            layout,
           );
-          const index = catalogIndexForCell(cell, { columns: cols, rows });
+          const index = catalogIndexForCell(cell, layout);
           if (!pausedRef.current && index !== tile.userData.catalogIndex)
             bindTile(tile, index);
           if (

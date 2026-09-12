@@ -259,6 +259,7 @@ export default function GalleryClient({
           items={items}
           hasMore={hasMore}
           onNeedMore={loadMore}
+          searchMode={query.trim().length > 0}
           visibleProjectIds={visibleProjectIds}
           mode={mode}
           theme="light"

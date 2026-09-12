@@ -41,3 +41,10 @@ void test('homepage detail uses the work title instead of a long photographer cr
     /\.featured-detail__copy h1\s*{[^}]*font-size:\s*clamp\(24px,\s*2\.5vw,\s*40px\);/,
   );
 });
+
+void test('expanded detail copy keeps the top reachable when content overflows', () => {
+  assert.match(
+    dailyEditStyles,
+    /\.featured-detail__copy\s*\{[^}]*justify-content:\s*safe center;/,
+  );
+});
