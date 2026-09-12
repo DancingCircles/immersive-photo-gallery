@@ -3,7 +3,7 @@
 import { Volume1, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-const TRACK_TITLE = 'Carry Me Into the Light';
+const TRACK_TITLE = 'Memories in Soft Light';
 const STORAGE_KEY = 'background-music:settings';
 const DEFAULT_VOLUME = 0.5;
 const DEFAULT_MUTED = true;
@@ -93,7 +93,7 @@ export default function BackgroundMusic() {
       <audio
         ref={audioRef}
         className="background-music__audio"
-        src="/audio/carry-me-into-the-light.mp3"
+        src="/audio/memories-in-soft-light.mp3"
         loop
         preload="auto"
         aria-label={TRACK_TITLE}

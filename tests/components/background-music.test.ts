@@ -11,8 +11,8 @@ const layout = readFileSync(new URL('app/layout.tsx', root), 'utf8');
 
 void test('background music is mounted once at the root and keeps the requested track title', () => {
   assert.match(layout, /<BackgroundMusic \/>/);
-  assert.match(component, /Carry Me Into the Light/);
-  assert.match(component, /carry-me-into-the-light\.mp3/);
+  assert.match(component, /Memories in Soft Light/);
+  assert.match(component, /memories-in-soft-light\.mp3/);
   assert.match(component, /loop/);
 });
 
@@ -28,7 +28,7 @@ void test('background music starts at fifty percent and exposes mute and volume 
 
 void test('the background music asset is included in the public bundle', () => {
   assert.equal(
-    existsSync(new URL('public/audio/carry-me-into-the-light.mp3', root)),
+    existsSync(new URL('public/audio/memories-in-soft-light.mp3', root)),
     true,
   );
 });
