@@ -33,6 +33,14 @@ export function catalogIndexForCell(cell: Cell, pool: Pool): number {
   );
 }
 
+export function catalogItemForIndex<T>(
+  catalog: readonly T[],
+  index: number,
+): T | undefined {
+  if (catalog.length === 0) return undefined;
+  return catalog[positiveModulo(index, catalog.length)];
+}
+
 export function shouldPrefetchCatalog(
   index: number,
   loaded: number,

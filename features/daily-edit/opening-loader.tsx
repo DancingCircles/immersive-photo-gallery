@@ -6,8 +6,8 @@ const COLUMN_COUNT = 24;
 const LOADING_DURATION = 2400;
 const EXIT_DURATION = 420;
 
-// Module state outlives App Router transitions but resets on a document reload.
-// "playing" keeps React Strict Mode's development remount from consuming it.
+// The root layout keeps this component mounted across App Router transitions.
+// The module state also protects the animation from React Strict Mode remounts.
 let openingStatus: 'not-started' | 'playing' | 'shown' = 'not-started';
 
 const PINK_PIXEL_PALETTE = [

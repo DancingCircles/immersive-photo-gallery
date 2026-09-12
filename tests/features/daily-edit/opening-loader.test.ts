@@ -6,10 +6,11 @@ const root = new URL('../../../', import.meta.url);
 const source = (path: string) => readFileSync(new URL(path, root), 'utf8');
 
 void test('homepage introduces the pixel loading sequence before its content', () => {
-  const home = source('features/daily-edit/featured-home.tsx');
+  const layout = source('app/layout.tsx');
 
-  assert.match(home, /OpeningLoader/);
-  assert.match(home, /<OpeningLoader\s*\/>/);
+  assert.match(layout, /OpeningLoader/);
+  assert.match(layout, /<OpeningLoader\s*\/>/);
+  assert.doesNotMatch(source('features/daily-edit/featured-home.tsx'), /OpeningLoader/);
   assert.equal(
     existsSync(new URL('features/daily-edit/opening-loader.tsx', root)),
     true,

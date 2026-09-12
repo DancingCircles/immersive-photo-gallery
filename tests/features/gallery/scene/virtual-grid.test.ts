@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   virtualCellForOffset,
   catalogIndexForCell,
+  catalogItemForIndex,
   shouldPrefetchCatalog,
   createBindingGeneration,
 } from '../../../../features/gallery/scene/virtual-grid.ts';
@@ -50,6 +51,14 @@ void test('prefetch starts at the last 12 loaded works and never for a completed
   assert.equal(shouldPrefetchCatalog(96, 48, true), true);
   assert.equal(shouldPrefetchCatalog(47, 48, false), false);
   assert.equal(shouldPrefetchCatalog(0, 0, true), false);
+});
+
+void test('partial pages keep the full gallery populated while the next page loads', () => {
+  assert.deepEqual(
+    [0, 1, 2, 3, 4].map((index) => catalogItemForIndex(['one', 'two'], index)),
+    ['one', 'two', 'one', 'two', 'one'],
+  );
+  assert.equal(catalogItemForIndex([], 0), undefined);
 });
 
 void test('rebinding and releasing reject stale image completions', () => {

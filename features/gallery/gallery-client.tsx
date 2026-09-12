@@ -314,16 +314,6 @@ export default function GalleryClient({
             </TabsTrigger>
           </TabsList>
         </Tabs>
-        {hasMore && (
-          <button
-            className="gallery-catalog__more"
-            type="button"
-            disabled={catalogStatus === 'loading-more'}
-            onClick={() => void loadMore()}
-          >
-            {catalogStatus === 'loading-more' ? 'LOADING' : 'LOAD MORE'}
-          </button>
-        )}
       </footer>
       {selected && (
         <>

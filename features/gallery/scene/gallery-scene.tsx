@@ -28,6 +28,7 @@ import { createCrossOriginImage } from './cross-origin-image';
 import {
   virtualCellForOffset,
   catalogIndexForCell,
+  catalogItemForIndex,
   shouldPrefetchCatalog,
   createBindingGeneration,
 } from './virtual-grid';
@@ -363,9 +364,7 @@ export default function Scene({
     };
     const bindTile = (tile: THREE.Mesh, index: number) => {
       const catalog = itemsRef.current;
-      const project = catalog.length
-        ? catalog[hasMoreRef.current ? index : index % catalog.length]
-        : undefined;
+      const project = catalogItemForIndex(catalog, index);
       const previousProject = tile.userData.project as GalleryCard | undefined;
       tile.userData.catalogIndex = index;
       tile.userData.project = project;

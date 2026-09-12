@@ -1,6 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { gsap } from 'gsap';
 import type { WorkSummary } from '@/domain/work/work';
 import { featuredReducer, initialFeaturedState } from '@/features/daily-edit/state/featured-state';
@@ -24,7 +32,32 @@ import XylophoneBackground, {
 } from './xylophone-background';
 import XylophoneSoundToggle from './xylophone-sound-toggle';
 import SiteNav from '@/components/navigation/site-nav';
-import OpeningLoader from './opening-loader';
+
+const SOUND_STORAGE_KEY = 'xylophone:sound';
+const soundPreferenceListeners = new Set<() => void>();
+
+function subscribeToSoundPreference(listener: () => void) {
+  soundPreferenceListeners.add(listener);
+  return () => soundPreferenceListeners.delete(listener);
+}
+
+function readSoundEnabled() {
+  if (typeof window === 'undefined') return true;
+  try {
+    return window.localStorage.getItem(SOUND_STORAGE_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
+function persistSoundEnabled(enabled: boolean) {
+  try {
+    window.localStorage.setItem(SOUND_STORAGE_KEY, enabled ? 'on' : 'off');
+  } catch {
+    // Storage can be unavailable in privacy-restricted browser contexts.
+  }
+  soundPreferenceListeners.forEach((listener) => listener());
+}
 
 const snapshot = ({ left, top, width, height }: DOMRect): RectSnapshot => ({
   left,
@@ -36,7 +69,11 @@ const snapshot = ({ left, top, width, height }: DOMRect): RectSnapshot => ({
 export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
   const [state, dispatch] = useReducer(featuredReducer, initialFeaturedState);
   const [imageSide, setImageSide] = useState<ImageSide>('right');
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const soundEnabled = useSyncExternalStore(
+    subscribeToSoundPreference,
+    readSoundEnabled,
+    () => true,
+  );
   const xylophoneRef = useRef<XylophoneBackgroundHandle | null>(null);
   const sourceRef = useRef<HTMLButtonElement | null>(null);
   const sourceRectRef = useRef<RectSnapshot | null>(null);
@@ -60,8 +97,8 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
     state.selectedId === null ? null : (dailyWorks[state.selectedId] ?? null);
 
   const changeSoundEnabled = useCallback((enabled: boolean) => {
+    persistSoundEnabled(enabled);
     xylophoneRef.current?.setSoundEnabled(enabled);
-    setSoundEnabled(enabled);
   }, []);
 
   const removeMovers = useCallback(() => {
@@ -391,7 +428,6 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
 
   return (
     <>
-      <OpeningLoader />
       <SmoothScroll>
         <div className="featured-home" data-detail-open={selected !== null}>
           <XylophoneBackground ref={xylophoneRef} soundEnabled={soundEnabled} />

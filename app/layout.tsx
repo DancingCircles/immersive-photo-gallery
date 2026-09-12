@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import OpeningLoader from '@/features/daily-edit/opening-loader';
 import './globals.css';
 export const metadata: Metadata = {
   title: '拾光集 · 光影漫游',
@@ -12,7 +13,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <OpeningLoader />
+        {children}
+      </body>
     </html>
   );
 }
