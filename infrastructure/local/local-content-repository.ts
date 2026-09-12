@@ -2,7 +2,7 @@ import { ContentError } from '../../application/errors/content-error.ts';
 import type { ContentRepository, CursorPage, ListWorksInput } from '../../application/ports/content-repository.ts';
 import type { DailyEdit } from '../../domain/daily-edit/daily-edit.ts';
 import type { WorkDetail, WorkSummary } from '../../domain/work/work.ts';
-import { workFixtures } from './fixtures.ts';
+import { dailyFixtureWorkIDs, workFixtures } from './fixtures.ts';
 
 const MAX_LIMIT = 60;
 
@@ -56,11 +56,16 @@ export const localContentRepository: ContentRepository = {
   },
 
   async getDailyEdit(date: string): Promise<DailyEdit> {
+    const works = dailyFixtureWorkIDs.map((id) => {
+      const work = workFixtures.find((item) => item.id === id);
+      if (!work) throw new Error(`missing local daily work ${id}`);
+      return summary(work);
+    });
     return {
       date,
       generatedAt: `${date}T00:00:00.000Z`,
-      selectionVersion: 'local-development-v1',
-      works: workFixtures.slice(0, 12).map(summary),
+      selectionVersion: 'published-backend-snapshot-2026-09-12',
+      works,
     };
   },
 };

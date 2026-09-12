@@ -134,6 +134,19 @@
   transition: opacity 160ms ease;
 }
 
+.backend-status-indicator {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  margin: 0 8px 6px 0;
+  border-radius: 50%;
+  background: #d22f2f;
+}
+
+.backend-status-indicator.is-connected {
+  background: #111;
+}
+
 .site-nav .xylophone-sound-toggle:hover {
   opacity: 0.58;
 }

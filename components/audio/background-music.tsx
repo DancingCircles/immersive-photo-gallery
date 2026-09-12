@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 const TRACK_TITLE = 'Carry Me Into the Light';
 const STORAGE_KEY = 'background-music:settings';
 const DEFAULT_VOLUME = 0.5;
+const DEFAULT_MUTED = true;
 
 type MusicSettings = {
   muted: boolean;
@@ -14,7 +15,7 @@ type MusicSettings = {
 
 function readSettings(): MusicSettings {
   if (typeof window === 'undefined') {
-    return { muted: false, volume: DEFAULT_VOLUME };
+    return { muted: DEFAULT_MUTED, volume: DEFAULT_VOLUME };
   }
   try {
     const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? 'null') as
@@ -25,11 +26,11 @@ function readSettings(): MusicSettings {
         ? Math.min(1, Math.max(0, saved.volume))
         : DEFAULT_VOLUME;
     return {
-      muted: saved?.muted === true,
+      muted: DEFAULT_MUTED,
       volume,
     };
   } catch {
-    return { muted: false, volume: DEFAULT_VOLUME };
+    return { muted: DEFAULT_MUTED, volume: DEFAULT_VOLUME };
   }
 }
 
@@ -45,7 +46,7 @@ export default function BackgroundMusic() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hydratedRef = useRef(false);
   const [volume, setVolume] = useState(DEFAULT_VOLUME);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(DEFAULT_MUTED);
 
   useEffect(() => {
     const settings = readSettings();
@@ -55,20 +56,8 @@ export default function BackgroundMusic() {
     setMuted(settings.muted);
     audio.volume = settings.volume;
     audio.muted = settings.muted;
+    if (settings.muted) audio.pause();
     hydratedRef.current = true;
-
-    const startPlayback = () => {
-      void audio.play().catch(() => {
-        // Browsers may require a user gesture before allowing audio playback.
-      });
-    };
-    startPlayback();
-    window.addEventListener('pointerdown', startPlayback, { once: true });
-    window.addEventListener('keydown', startPlayback, { once: true });
-    return () => {
-      window.removeEventListener('pointerdown', startPlayback);
-      window.removeEventListener('keydown', startPlayback);
-    };
   }, []);
 
   useEffect(() => {
@@ -76,14 +65,25 @@ export default function BackgroundMusic() {
     if (audio) {
       audio.volume = volume;
       audio.muted = muted;
+      if (muted) audio.pause();
     }
     if (hydratedRef.current) writeSettings({ muted, volume });
   }, [muted, volume]);
 
-  const startPlayback = () => {
-    void audioRef.current?.play().catch(() => {
-      // Playback will be retried by the next user gesture.
-    });
+  const togglePlayback = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (muted) {
+      audio.muted = false;
+      setMuted(false);
+      void audio.play().catch(() => {
+        // Playback can still be blocked by the browser's media policy.
+      });
+      return;
+    }
+    audio.pause();
+    audio.muted = true;
+    setMuted(true);
   };
 
   return (
@@ -104,8 +104,7 @@ export default function BackgroundMusic() {
         aria-label={muted ? `取消静音：${TRACK_TITLE}` : `静音：${TRACK_TITLE}`}
         aria-pressed={muted}
         title={TRACK_TITLE}
-        onPointerDown={startPlayback}
-        onClick={() => setMuted((value) => !value)}
+        onClick={togglePlayback}
       >
         {muted || volume === 0 ? (
           <VolumeX aria-hidden="true" />
@@ -124,7 +123,6 @@ export default function BackgroundMusic() {
           step="0.01"
           value={volume}
           aria-label={`调节背景音乐音量：${TRACK_TITLE}`}
-          onPointerDown={startPlayback}
           onChange={(event) => setVolume(Number(event.target.value))}
         />
       </label>

@@ -61,10 +61,10 @@ void test('gallery handler parses cursor, query, limit, and defaults to 48', asy
     new Set(limitedBody.data.items.map((item) => item.id)),
   ).size, 0);
 
-  const filtered = await getGallery(new Request('https://gallery.test/api/content/gallery?query=street'));
+  const filtered = await getGallery(new Request('https://gallery.test/api/content/gallery?query=%E6%A4%8D%E7%89%A9'));
   const filteredBody = (await filtered.json()) as { data: { items: Array<{ category: string }> } };
   assert.equal(filteredBody.data.items.length, 4);
-  assert.ok(filteredBody.data.items.every((item) => item.category.toLowerCase().includes('street')));
+  assert.ok(filteredBody.data.items.every((item) => item.category.includes('植物')));
 });
 
 void test('daily edit and work handlers parse route parameters', async () => {
@@ -73,9 +73,9 @@ void test('daily edit and work handlers parse route parameters', async () => {
   assert.equal(dailyBody.data.date, '2026-09-08');
   assert.equal(dailyBody.data.works.length, 12);
 
-  const work = await getWork(new Request('https://gallery.test'), { params: { id: 'work%2D01' } });
+  const work = await getWork(new Request('https://gallery.test'), { params: { id: 'work%2D3f002a09%2D3fd2%2D455e%2D8db0%2D95c1c8cff716' } });
   const workBody = (await work.json()) as { data: { id: string } };
-  assert.equal(workBody.data.id, 'work-01');
+  assert.equal(workBody.data.id, 'work-3f002a09-3fd2-455e-8db0-95c1c8cff716');
 });
 
 void test('route handlers use the uniform error response', async () => {

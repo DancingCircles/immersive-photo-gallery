@@ -18,9 +18,12 @@ void test('background music is mounted once at the root and keeps the requested 
 
 void test('background music starts at fifty percent and exposes mute and volume controls', () => {
   assert.match(component, /DEFAULT_VOLUME = 0\.5/);
+  assert.match(component, /DEFAULT_MUTED = true/);
   assert.match(component, /type="range"/);
   assert.match(component, /aria-pressed=\{muted\}/);
   assert.match(component, /localStorage/);
+  assert.match(component, /if \(settings\.muted\) audio\.pause\(\)/);
+  assert.doesNotMatch(component, /window\.addEventListener\('pointerdown'/);
 });
 
 void test('the background music asset is included in the public bundle', () => {

@@ -31,6 +31,7 @@ import XylophoneBackground, {
   type XylophoneBackgroundHandle,
 } from './xylophone-background';
 import XylophoneSoundToggle from './xylophone-sound-toggle';
+import BackendStatusIndicator from '@/components/navigation/backend-status-indicator';
 import SiteNav from '@/components/navigation/site-nav';
 
 const SOUND_STORAGE_KEY = 'xylophone:sound';
@@ -473,6 +474,7 @@ export default function FeaturedHome({ works }: { works: WorkSummary[] }) {
         </div>
       </SmoothScroll>
       <SiteNav current="featured">
+        <BackendStatusIndicator />
         <XylophoneSoundToggle
           enabled={soundEnabled}
           onChange={changeSoundEnabled}

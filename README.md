@@ -32,6 +32,8 @@
 
 内容层已经与展示层解耦：开发时默认从本地 TypeScript 种子数据读取；设置 HTTP 数据源后，由同源 `/api/content/*` 路由转发到 Go 内容 API。浏览器不会直接请求后端 API。
 
+开源展示默认使用仓库内的离线快照；它基于 2026-09-12 的已发布后端作品，包含 20 张展示图以及原始署名和许可链接。页面不提供访客可见的数据源开关，避免演示数据与实时数据混用。
+
 ## 本地开发
 
 ### 环境要求
@@ -99,7 +101,7 @@ vite.config.ts              # Vinext、Vite、Sites 与 Cloudflare 配置
 
 ## 添加或更新作品
 
-本地开发时，作品种子数据位于 `infrastructure/local/local-content-repository.ts`；将已获授权的图片放入 `public/art/` 后，在该适配器中补全作品信息。生产环境应由 Go API 写入并返回这些数据，而不是由页面直接读取静态数据。
+本地展示的作品快照位于 `infrastructure/local/fixtures.ts`，图片位于 `public/art/demo/`。新增或替换展示内容时，应同时更新两者；生产环境则由 Go API 写入并返回这些数据，而不是由页面直接读取静态数据。
 
 作品数据结构：
 
@@ -123,7 +125,9 @@ type WorkDetail = {
 
 ## 内容源与 Go API
 
-复制 `.env.example` 为本地环境文件后，默认使用 `CONTENT_SOURCE=local`。接入 Go 服务时设置 `CONTENT_SOURCE=http`、`CONTENT_API_BASE_URL` 和可选超时值；浏览器依旧只请求同源路由。
+复制 `.env.example` 为本地环境文件后，默认使用 `CONTENT_SOURCE=local`，无需运行数据库或 Go 服务。这个变量是内部数据源开关：维护者把它改为 `http` 并配置 `CONTENT_API_BASE_URL` 后，重启前端服务即可切回 Go 内容 API；改回 `local` 则恢复离线展示快照。浏览器依旧只请求同源路由，后端地址不会暴露给客户端。
+
+首页 `SOUND ON` 旁的状态点仅用于运维观察：黑点表示 HTTP 后端已连接，红点表示已配置 HTTP 但后端未就绪；`local` 纯前端展示模式不显示状态点，也不提供访客可操作的数据源按钮。
 
 Go 服务需要实现以下 JSON 信封接口（所有成功响应为 `{ "data": ... }`，错误响应为 `{ "error": { "code", "message", "requestId" } }`）：
 
@@ -154,7 +158,9 @@ npm run build
 
 ## 素材与许可
 
-`public/art/` 当前包含私有开发阶段的占位素材，不应视为可再分发内容。公开仓库或发布正式版本前，请将其替换为以下任一种素材：
+`public/art/demo/` 包含已发布内容的离线展示快照。每件作品的作者、来源和许可证已在 `infrastructure/local/fixtures.ts` 中保留；其中包含 CC0 及 CC BY-SA 素材。再次发布、替换或扩充快照前，请核验各作品来源页的最新授权条件。
+
+后续新增演示素材时，应使用以下任一种：
 
 - 自有摄影作品
 - 公共领域素材
