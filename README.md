@@ -2,6 +2,8 @@
 
 一个以摄影作品为核心的沉浸式 Web 画廊。项目包含编辑式推荐首页和可交互的 WebGL 作品墙，并针对触摸设备、键盘操作、减少动态效果偏好以及 WebGL 不可用的情况提供适配。
 
+这是前端展示仓库。前端默认可以完全离线运行，也可以通过服务端环境变量切换到私有实时内容 API。
+
 ## 页面与体验
 
 ### Daily Edit（`/`）
@@ -11,6 +13,8 @@
 - 详情关闭后恢复原卡片位置与键盘焦点
 - 桌面端使用宽松的首屏排版，900px 以下切换为双列紧凑布局
 - 系统开启“减少动态效果”时自动使用简化转场
+- 背景音乐默认静音，用户点击后播放 `Memories in Soft Light`
+- `SOUND ON` 控制木琴悬停音效；浏览器首次播放可能需要一次用户手势解锁音频
 
 ### Gallery（`/gallery`）
 
@@ -30,7 +34,7 @@
 - **运行环境：** Cloudflare Workers、Wrangler、OpenAI Sites
 - **工程工具：** Node.js Test Runner、Oxlint、Oxfmt
 
-内容层已经与展示层解耦：开发时默认从本地 TypeScript 种子数据读取；设置 HTTP 数据源后，由同源 `/api/content/*` 路由转发到 Go 内容 API。浏览器不会直接请求后端 API。
+内容层已经与展示层解耦：开发时默认从本地 TypeScript 快照读取；设置 HTTP 数据源后，由同源 `/api/content/*` 路由转发到配套 Go 内容 API。浏览器不会直接请求后端 API，前端页面不需要暴露后端地址或凭据。
 
 开源展示默认使用仓库内的离线快照；它基于 2026-09-12 的已发布后端作品，包含 20 张展示图以及原始署名和许可链接。页面不提供访客可见的数据源开关，避免演示数据与实时数据混用。
 
@@ -63,7 +67,7 @@ npm run dev
 npm test
 
 # 检查应用与业务代码
-npx oxlint app application domain features infrastructure lib
+npm run lint
 
 # TypeScript 类型检查
 npx tsc --noEmit
@@ -95,6 +99,7 @@ features/                   # daily-edit、gallery、work-detail 的界面实现
 lib/                        # 纯函数、状态与回归测试
 
 public/art/                  # 本地摄影作品素材
+public/audio/                # 背景音乐资源
 .openai/hosting.json        # OpenAI Sites 能力声明
 vite.config.ts              # Vinext、Vite、Sites 与 Cloudflare 配置
 ```
@@ -125,11 +130,19 @@ type WorkDetail = {
 
 ## 内容源与 Go API
 
-复制 `.env.example` 为本地环境文件后，默认使用 `CONTENT_SOURCE=local`，无需运行数据库或 Go 服务。这个变量是内部数据源开关：维护者把它改为 `http` 并配置 `CONTENT_API_BASE_URL` 后，重启前端服务即可切回 Go 内容 API；改回 `local` 则恢复离线展示快照。浏览器依旧只请求同源路由，后端地址不会暴露给客户端。
+复制 `.env.example` 为本地环境文件后，默认使用 `CONTENT_SOURCE=local`，无需运行数据库或 Go 服务。维护者需要接入实时后端时，将其改为 `http` 并配置后端地址：
+
+```dotenv
+CONTENT_SOURCE=http
+CONTENT_API_BASE_URL=https://your-api.example.com
+CONTENT_API_TIMEOUT_MS=8000
+```
+
+修改后重启前端服务即可；改回 `local` 则恢复离线展示快照。生产部署时应在部署平台配置这些变量，不要把真实 `.env` 文件提交到仓库。浏览器依旧只请求同源路由，后端地址不会暴露给客户端。
 
 首页 `SOUND ON` 旁的状态点仅用于运维观察：黑点表示 HTTP 后端已连接，红点表示已配置 HTTP 但后端未就绪；`local` 纯前端展示模式不显示状态点，也不提供访客可操作的数据源按钮。
 
-Go 服务需要实现以下 JSON 信封接口（所有成功响应为 `{ "data": ... }`，错误响应为 `{ "error": { "code", "message", "requestId" } }`）：
+配套 Go API 实现以下 JSON 信封接口（所有成功响应为 `{ "data": ... }`，错误响应为 `{ "error": { "code", "message", "requestId" } }`）：
 
 - `GET /v1/works?cursor=&limit=&query=`：游标分页的作品摘要；当前 Go API 以 `nextCursor` 是否存在表示是否还有下一页，HTTP 适配器会补齐 `hasMore`。
 - `GET /v1/works/:id`：单件完整 `WorkDetail`。
@@ -137,13 +150,25 @@ Go 服务需要实现以下 JSON 信封接口（所有成功响应为 `{ "data":
 
 接口字段与解码规则见 `docs/api/content-api.md`。画廊客户端以 48 张 Three.js 卡片为固定池，靠近已加载末尾时预取下一页；后端负责游标、搜索、每日精选和最多 1000 件作品的淘汰策略。
 
+## 开源贡献
+
+欢迎通过 Pull Request 改进界面、交互、性能、无障碍体验和内容适配。建议按以下流程参与：
+
+1. Fork 仓库并从 `main` 创建功能分支。
+2. 复制 `.env.example` 为 `.env`；界面开发默认使用 `CONTENT_SOURCE=local`，不需要数据库、API Key 或 Go 服务。
+3. 修改后运行 `npm test`、`npm run lint`、`npx tsc --noEmit` 和 `npm run build`。
+4. 提交时说明改动范围、验证结果，以及是否涉及素材授权或后端接口。
+5. 提交 Pull Request；不要提交 `.env`、API Key、数据库连接串或没有明确再分发授权的摄影素材。
+
+如果改动涉及实时内容、入库、搜索索引、推荐或审核流程，请先确认私有后端接口契约没有被破坏；不要在公开 PR 中提交后端地址、数据库信息、API Key 或内部业务实现。
+
 ## 验证
 
 提交修改前建议依次运行：
 
 ```sh
 npm test
-npx oxlint app application domain features infrastructure lib
+npm run lint
 npx tsc --noEmit
 npm run build
 ```
@@ -158,7 +183,9 @@ npm run build
 
 ## 素材与许可
 
-`public/art/demo/` 包含已发布内容的离线展示快照。每件作品的作者、来源和许可证已在 `infrastructure/local/fixtures.ts` 中保留；其中包含 CC0 及 CC BY-SA 素材。再次发布、替换或扩充快照前，请核验各作品来源页的最新授权条件。
+`public/art/demo/` 包含已发布内容的离线展示快照。每件实际使用的摄影作品，其作者、来源和许可证都已在 `infrastructure/local/fixtures.ts` 中保留，并会在作品详情中显示；其中包含 CC0 及 CC BY-SA 素材。再次发布、替换或扩充快照前，请核验各作品来源页的最新授权条件。
+
+木琴背景使用的第三方代码、模型和音频声明集中在 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)；请保留该文件。`public/audio/memories-in-soft-light.mp3` 是项目随附的 BGM，公开发布前请确认其拥有再分发授权。
 
 后续新增演示素材时，应使用以下任一种：
 
@@ -166,4 +193,8 @@ npm run build
 - 公共领域素材
 - 已获得明确展示与再分发授权的作品
 
-新增作品时应同时记录摄影师、作品标题、发布日期、分类、来源和授权信息。仓库目前未提供正式 `LICENSE` 文件；确定开源方式后，应补充代码许可并分别说明摄影素材的授权范围。
+新增作品时应同时记录摄影师、作品标题、发布日期、分类、来源和授权信息。
+
+## 许可证
+
+本仓库的前端源代码以 MIT License 发布，见 [`LICENSE`](LICENSE)。MIT 许可仅适用于本项目源代码及文档，不自动授予仓库内摄影作品、`public/audio/memories-in-soft-light.mp3` 或第三方代码、模型、音频的使用权；这些内容请分别遵守其来源或 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) 中的授权说明。
