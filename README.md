@@ -1,51 +1,42 @@
 # Immersive Photo Gallery
 
-一个以摄影作品为核心的沉浸式前端画廊。它用简约的编辑式界面呈现摄影作品，同时加入 Three.js WebGL 作品墙、GSAP 转场、AI 图像解读与提示词展示，让浏览图片更像一次完整的视觉体验。
+一个以摄影作品为核心的沉浸式 Web 画廊。项目包含编辑式推荐首页和可交互的 WebGL 作品墙，并针对触摸设备、键盘操作、减少动态效果偏好以及 WebGL 不可用的情况提供适配。
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-111111?style=flat-square)](https://dancingcircles.github.io/immersive-photo-gallery/)
-[![License](https://img.shields.io/badge/license-MIT-111111?style=flat-square)](LICENSE)
+这是前端展示仓库。前端默认可以完全离线运行，也可以通过服务端环境变量切换到私有实时内容 API。
 
-**在线演示：** [dancingcircles.github.io/immersive-photo-gallery](https://dancingcircles.github.io/immersive-photo-gallery/)
+## 页面与体验
 
-**源码仓库：** [github.com/DancingCircles/immersive-photo-gallery](https://github.com/DancingCircles/immersive-photo-gallery)
+### Daily Edit（`/`）
 
-`Photography` · `Creative Coding` · `WebGL` · `Three.js` · `GSAP` · `CSS Animation` · `React` · `TypeScript` · `Awwwards-inspired`
-
-> 这是一个前端开源展示仓库。GitHub Pages 使用仓库内的 20 张作品快照离线运行，不需要数据库或后端服务；私有后端仅用于正式环境的实时内容接入，不包含在本仓库中。
-
-## 页面体验
-
-### Daily Edit · `/`
-
-- 以编辑式推荐首页呈现 12 件摄影作品
-- 点击作品后，通过 GSAP 多阶段转场进入详情
+- 从作品库中选取前 12 件作品，组成四列编辑式推荐网格
+- 点击作品后，以 GSAP 多阶段转场进入全屏详情
 - 详情关闭后恢复原卡片位置与键盘焦点
-- 背景音乐 `Memories in Soft Light` 默认静音，用户点击后播放
-- 支持减少动态效果偏好与小屏幕布局
+- 桌面端使用宽松的首屏排版，900px 以下切换为双列紧凑布局
+- 系统开启“减少动态效果”时自动使用简化转场
+- 背景音乐默认静音，用户点击后播放 `Memories in Soft Light`
+- `SOUND ON` 控制木琴悬停音效；浏览器首次播放可能需要一次用户手势解锁音频
 
-### Gallery · `/gallery`
+### Gallery（`/gallery`）
 
-- 使用 Three.js 构建可循环浏览的 WebGL 作品墙
+- 使用 Three.js 生成可循环浏览的 WebGL 作品墙
 - 支持 3D 空间视角与无径向畸变的 Flat 视角
 - 支持鼠标拖拽、触摸、滚轮、方向键和 `Home` 键
-- 使用惯性移动、循环排列、自定义 Shader 和作品悬停反馈
-- WebGL 不可用或设备性能受限时自动切换到 Flat 模式
+- 包含惯性移动、循环排列、作品悬停反馈和自定义后处理 Shader
+- 小屏幕、减少动态效果偏好或 WebGL 初始化失败时自动切换到 Flat 模式
 
-### Work Detail · `/works/:id`
+## 技术栈
 
-- 展示摄影师、作品标题、创作说明与来源信息
-- 展示图片解读和 AI 生成提示词
-- 每件作品保留作者、来源与许可证链接
-- 详情页支持直接访问和分享
+- **界面框架：** React 19、TypeScript、Next.js App Router 兼容 API
+- **开发与构建：** Vinext、Vite
+- **3D 渲染：** Three.js、WebGL、Effect Composer、自定义 Shader
+- **动效：** GSAP
+- **样式与组件：** Tailwind CSS 4、shadcn、Base UI、Lucide React
+- **运行环境：** Cloudflare Workers、Wrangler、OpenAI Sites
+- **工程工具：** Node.js Test Runner、Oxlint、Oxfmt
 
-## 技术关键词
+内容层已经与展示层解耦：开发时默认从本地 TypeScript 快照读取；设置 HTTP 数据源后，由同源 `/api/content/*` 路由转发到配套 Go 内容 API。浏览器不会直接请求后端 API，前端页面不需要暴露后端地址或凭据。
 
-- **界面：** React 19、TypeScript、Tailwind CSS 4、Base UI、Lucide React
-- **视觉：** Three.js、WebGL、Effect Composer、GLSL Shader
-- **动效：** GSAP、CSS Animation、View Transition 风格转场
-- **构建：** Vinext、Vite、Cloudflare Workers 兼容产物
-- **工程：** Node.js Test Runner、Oxlint、Oxfmt
-- **部署：** GitHub Pages（静态展示）、Cloudflare Workers / Sites（正式环境）
+开源展示默认使用仓库内的离线快照；它基于 2026-09-12 的已发布后端作品，包含 20 张展示图以及原始署名和许可链接。页面不提供访客可见的数据源开关，避免演示数据与实时数据混用。
 
 ## 本地开发
 
@@ -66,36 +57,80 @@ npm run dev
 - 推荐首页：`http://localhost:3000/`
 - WebGL 画廊：`http://localhost:3000/gallery`
 
-默认使用本地作品快照，不需要启动数据库、Go 服务或配置 API Key。
-
 ## 常用命令
 
 ```sh
 # 启动开发服务
 npm run dev
 
-# 运行测试
+# 运行单元测试
 npm test
 
-# 代码检查
+# 检查应用与业务代码
 npm run lint
 
 # TypeScript 类型检查
 npx tsc --noEmit
 
-# 生成生产构建产物
+# 生成 Cloudflare Workers 构建产物
 npm run build
 
-# 本地运行构建产物
+# 在本地运行构建产物
 npm run start
 
 # 格式化项目
 npm run format
 ```
 
-## 内容模式
+## 项目结构
 
-前端内容层与展示层已经解耦，默认从 `infrastructure/local/fixtures.ts` 读取离线快照，图片位于 `public/art/demo/`。如果需要接入私有实时后端，可以复制 `.env.example` 为 `.env`，再配置：
+```text
+app/
+├── api/content/            # 同源内容 API：gallery、works、daily-edits
+├── page.tsx                # Daily Edit 路由
+├── gallery/page.tsx        # 3D / Flat Gallery 路由
+├── works/[id]/page.tsx     # 可分享的作品详情路由
+└── globals.css             # 全局样式与响应式布局
+
+domain/                     # 作品与每日精选的稳定领域模型
+application/                # 查询用例、仓储端口与统一错误响应
+infrastructure/             # local/http 仓储、配置、同源内容客户端
+features/                   # daily-edit、gallery、work-detail 的界面实现
+lib/                        # 纯函数、状态与回归测试
+
+public/art/                  # 本地摄影作品素材
+public/audio/                # 背景音乐资源
+.openai/hosting.json        # OpenAI Sites 能力声明
+vite.config.ts              # Vinext、Vite、Sites 与 Cloudflare 配置
+```
+
+## 添加或更新作品
+
+本地展示的作品快照位于 `infrastructure/local/fixtures.ts`，图片位于 `public/art/demo/`。新增或替换展示内容时，应同时更新两者；生产环境则由 Go API 写入并返回这些数据，而不是由页面直接读取静态数据。
+
+作品数据结构：
+
+```ts
+type WorkDetail = {
+  id: string;
+  title: string;
+  photographerName: string;
+  publishedAt: string;
+  category: string;
+  thumbnail: ImageAsset;
+  image: ImageAsset;
+  attribution: { sourceUrl: string; licenseName: string; creditLine: string };
+  artistStatement?: string;
+  editorialNote?: string;
+  aiAnalysis?: { content: string; generatedAt: string; model: string; version: string };
+};
+```
+
+摄影师原话、编辑部文案、AI 分析必须分别存储；来源、署名与许可信息为每件作品的必填元数据。Daily Edit 由内容仓储按日期返回固定 12 件，不由页面以数组切片生成。
+
+## 内容源与 Go API
+
+复制 `.env.example` 为本地环境文件后，默认使用 `CONTENT_SOURCE=local`，无需运行数据库或 Go 服务。维护者需要接入实时后端时，将其改为 `http` 并配置后端地址：
 
 ```dotenv
 CONTENT_SOURCE=http
@@ -103,53 +138,67 @@ CONTENT_API_BASE_URL=https://your-api.example.com
 CONTENT_API_TIMEOUT_MS=8000
 ```
 
-真实环境请只在部署平台配置后端地址，不要把 `.env`、API Key 或数据库连接串提交到公开仓库。浏览器通过同源路由请求内容，后端地址不会直接暴露给访客。
+修改后重启前端服务即可；改回 `local` 则恢复离线展示快照。生产部署时应在部署平台配置这些变量，不要把真实 `.env` 文件提交到仓库。浏览器依旧只请求同源路由，后端地址不会暴露给客户端。
 
-接口契约见 [`docs/api/content-api.md`](docs/api/content-api.md)。前端的本地展示模式与正式 HTTP 模式可以独立运行，GitHub Pages 只启用前者。
+首页 `SOUND ON` 旁的状态点仅用于运维观察：黑点表示 HTTP 后端已连接，红点表示已配置 HTTP 但后端未就绪；`local` 纯前端展示模式不显示状态点，也不提供访客可操作的数据源按钮。
 
-## GitHub Pages 在线展示
+配套 Go API 实现以下 JSON 信封接口（所有成功响应为 `{ "data": ... }`，错误响应为 `{ "error": { "code", "message", "requestId" } }`）：
 
-仓库已配置 [`Deploy GitHub Pages`](.github/workflows/deploy-github-pages.yml) 工作流。每次推送到 `main` 后，GitHub Actions 会自动构建静态展示版并发布到：
+- `GET /v1/works?cursor=&limit=&query=`：游标分页的作品摘要；当前 Go API 以 `nextCursor` 是否存在表示是否还有下一页，HTTP 适配器会补齐 `hasMore`。
+- `GET /v1/works/:id`：单件完整 `WorkDetail`。
+- `GET /v1/recommendations/:date`：指定日期的固定精选；HTTP 适配器会将其 `items` 映射为 Daily Edit。
 
-**[打开在线演示 →](https://dancingcircles.github.io/immersive-photo-gallery/)**
-
-GitHub Pages 是静态托管服务，因此这个地址展示的是当前仓库的前端快照，不会暴露或依赖私有后端。GitHub 仓库中的 README、顶部 Live Demo 按钮和上面的文字链接都可以直接跳转到在线站点。
-
-## 项目结构
-
-```text
-app/                         # 页面路由、错误页与同源内容路由
-domain/                      # 作品与每日精选领域模型
-application/                 # 查询用例、仓储端口与错误响应
-infrastructure/              # local/http 内容适配器
-features/                    # 首页、画廊、作品详情功能
-shared/                      # 公共路径与展示工具
-public/art/demo/             # 离线展示图片
-public/audio/                # 背景音乐
-docs/api/                    # 前后端内容接口契约
-.github/workflows/           # GitHub Pages 部署工作流
-```
+接口字段与解码规则见 `docs/api/content-api.md`。画廊客户端以 48 张 Three.js 卡片为固定池，靠近已加载末尾时预取下一页；后端负责游标、搜索、每日精选和最多 1000 件作品的淘汰策略。
 
 ## 开源贡献
 
-欢迎通过 Pull Request 改进界面、交互、性能、无障碍体验、移动端适配和内容展示。
+欢迎通过 Pull Request 改进界面、交互、性能、无障碍体验和内容适配。建议按以下流程参与：
 
-1. Fork 仓库，并从 `main` 创建功能分支。
-2. 复制 `.env.example` 为 `.env`，默认使用 `CONTENT_SOURCE=local`。
-3. 完成修改后运行测试、Lint、类型检查和构建。
-4. 在 Pull Request 中说明改动范围与验证结果。
-5. 不要提交 `.env`、API Key、数据库连接串或没有明确再分发授权的素材。
+1. Fork 仓库并从 `main` 创建功能分支。
+2. 复制 `.env.example` 为 `.env`；界面开发默认使用 `CONTENT_SOURCE=local`，不需要数据库、API Key 或 Go 服务。
+3. 修改后运行 `npm test`、`npm run lint`、`npx tsc --noEmit` 和 `npm run build`。
+4. 提交时说明改动范围、验证结果，以及是否涉及素材授权或后端接口。
+5. 提交 Pull Request；不要提交 `.env`、API Key、数据库连接串或没有明确再分发授权的摄影素材。
 
-如果改动涉及实时内容接口，请保持 [`docs/api/content-api.md`](docs/api/content-api.md) 中的契约兼容；后端业务实现和后端仓库不属于本开源项目的提交范围。
+如果改动涉及实时内容、入库、搜索索引、推荐或审核流程，请先确认私有后端接口契约没有被破坏；不要在公开 PR 中提交后端地址、数据库信息、API Key 或内部业务实现。
+
+## 验证
+
+提交修改前建议依次运行：
+
+```sh
+npm test
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+测试覆盖内容契约、本地与 HTTP 仓储、API 响应、Daily Edit、画廊分页与固定卡片池，以及既有详情转场、拖拽和布局约束。
+
+## 构建与运行
+
+`npm run build` 通过 Vinext 和 Vite 生成 Cloudflare Workers 兼容产物。构建完成后，可使用 `npm run start` 通过 Wrangler 在本地运行生产版本。
+
+项目包含 OpenAI Sites 配置，但当前未启用 D1 数据库或 R2 对象存储。
+
+## GitHub Pages 展示
+
+公开仓库包含 [`Deploy GitHub Pages`](.github/workflows/deploy-github-pages.yml) 工作流。推送到 `main` 后，GitHub Actions 会使用仓库内的离线快照构建前端展示版，不需要 Go API、数据库或其他后端服务。项目站点地址为 `https://dancingcircles.github.io/immersive-photo-gallery/`；如果仓库名称发生变化，需要同步调整工作流中的 `NEXT_PUBLIC_BASE_PATH`。
 
 ## 素材与许可
 
-- 前端源代码与文档以 [MIT License](LICENSE) 发布。
-- 摄影作品的作者、来源和许可证保存在 `infrastructure/local/fixtures.ts`，并会在作品详情中显示。
-- 第三方木琴代码、模型和音频声明见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
-- `public/audio/memories-in-soft-light.mp3` 为项目随附 BGM，重新发布或用于其他项目时，请确认其再分发授权。
-- MIT License 不自动授予摄影作品、BGM 或第三方资源的使用权；新增素材前请确认拥有展示和再分发权限。
+`public/art/demo/` 包含已发布内容的离线展示快照。每件实际使用的摄影作品，其作者、来源和许可证都已在 `infrastructure/local/fixtures.ts` 中保留，并会在作品详情中显示；其中包含 CC0 及 CC BY-SA 素材。再次发布、替换或扩充快照前，请核验各作品来源页的最新授权条件。
 
-## 许可边界
+木琴背景使用的第三方代码、模型和音频声明集中在 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)；请保留该文件。`public/audio/memories-in-soft-light.mp3` 是项目随附的 BGM，公开发布前请确认其拥有再分发授权。
 
-本仓库只开源前端实现。在线演示使用仓库内的静态快照；正式环境的 Go 内容 API、数据库、入库审核与运营数据属于独立的私有后端系统，不随本仓库发布。
+后续新增演示素材时，应使用以下任一种：
+
+- 自有摄影作品
+- 公共领域素材
+- 已获得明确展示与再分发授权的作品
+
+新增作品时应同时记录摄影师、作品标题、发布日期、分类、来源和授权信息。
+
+## 许可证
+
+本仓库的前端源代码以 MIT License 发布，见 [`LICENSE`](LICENSE)。MIT 许可仅适用于本项目源代码及文档，不自动授予仓库内摄影作品、`public/audio/memories-in-soft-light.mp3` 或第三方代码、模型、音频的使用权；这些内容请分别遵守其来源或 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) 中的授权说明。
