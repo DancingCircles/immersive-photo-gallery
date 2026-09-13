@@ -19,10 +19,16 @@ void test('homepage introduces the pixel loading sequence before its content', (
 
 void test('opening loader only consumes the initial document visit once', () => {
   const loader = source('features/daily-edit/opening-loader.tsx');
+  const layout = source('app/layout.tsx');
 
   assert.match(loader, /let openingStatus:/);
   assert.match(loader, /openingStatus === 'shown'/);
   assert.match(loader, /openingStatus = 'shown'/);
+  assert.match(loader, /__skipOpening/);
+  assert.match(layout, /openingVisitScript/);
+  assert.match(layout, /#skip-opening/);
+  assert.match(layout, /window\.__skipOpening = true/);
+  assert.match(layout, /history\.replaceState/);
 });
 
 void test('opening loader counts from zero to one hundred with a reduced-motion fallback', () => {
@@ -46,6 +52,7 @@ void test('opening loader uses irregular pink pixel clusters with a soft entranc
   assert.match(loader, /#d794c7/);
   assert.doesNotMatch(loader, /opening-loader__trail/);
   assert.match(styles, /\.opening-loader\s*\{/);
+  assert.match(styles, /data-skip-opening='true'/);
   assert.match(styles, /background:\s*#fff/);
   assert.match(styles, /\.opening-loader__pixels\s*\{/);
   assert.match(styles, /grid-template-columns:\s*repeat\(24,/);

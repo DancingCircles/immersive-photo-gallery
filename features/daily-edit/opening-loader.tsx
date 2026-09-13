@@ -10,6 +10,11 @@ const EXIT_DURATION = 420;
 // The module state also protects the animation from React Strict Mode remounts.
 let openingStatus: 'not-started' | 'playing' | 'shown' = 'not-started';
 
+function shouldSkipOpening() {
+  return typeof window !== 'undefined'
+    && (window as Window & { __skipOpening?: boolean }).__skipOpening === true;
+}
+
 const PINK_PIXEL_PALETTE = [
   '#e3a0ad', '#ecad9a', '#d794c7', '#e69aa3',
   '#dda0bf', '#f0b19a', '#d98e98', '#e0a0cc',
@@ -41,7 +46,9 @@ function createPixelPattern(): Pixel[] {
 export default function OpeningLoader() {
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState<'loading' | 'exiting'>('loading');
-  const [visible, setVisible] = useState(() => openingStatus !== 'shown');
+  const [visible, setVisible] = useState(
+    () => openingStatus !== 'shown' && !shouldSkipOpening(),
+  );
   const [pixels, setPixels] = useState<Pixel[]>([]);
 
   useEffect(() => {
@@ -50,6 +57,11 @@ export default function OpeningLoader() {
 
   useEffect(() => {
     if (openingStatus === 'shown') return;
+    if (shouldSkipOpening()) {
+      openingStatus = 'shown';
+      setVisible(false);
+      return;
+    }
     openingStatus = 'playing';
     let frame = 0;
     let exitTimer = 0;

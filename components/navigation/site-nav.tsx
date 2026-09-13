@@ -7,6 +7,11 @@ import { withPublicPath } from '@/shared/paths/public-path';
 
 const isStaticDemo = process.env.NEXT_PUBLIC_STATIC_DEMO === 'true';
 
+function staticNavigationHref(path: string) {
+  const href = withPublicPath(path);
+  return isStaticDemo ? `${href}#skip-opening` : href;
+}
+
 export default function SiteNav({
   current,
   searchValue = '',
@@ -36,7 +41,7 @@ export default function SiteNav({
       <div className="site-nav__links">
         {isStaticDemo ? (
           <a
-            href={withPublicPath('/')}
+            href={staticNavigationHref('/')}
             aria-current={current === 'featured' ? 'page' : undefined}
           >
             推荐
@@ -51,7 +56,7 @@ export default function SiteNav({
         )}
         {isStaticDemo ? (
           <a
-            href={withPublicPath('/gallery')}
+            href={staticNavigationHref('/gallery')}
             aria-current={current === 'gallery' ? 'page' : undefined}
           >
             画廊

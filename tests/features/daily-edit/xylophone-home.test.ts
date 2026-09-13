@@ -100,4 +100,8 @@ void test('background styles stay pale, fixed, and non-interactive', () => {
     source('components/navigation/site-nav.tsx'),
     /children\?: ReactNode/,
   );
+  assert.match(
+    source('components/navigation/site-nav.tsx'),
+    /#skip-opening/,
+  );
 });
