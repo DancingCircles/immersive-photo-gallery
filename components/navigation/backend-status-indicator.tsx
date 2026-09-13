@@ -4,10 +4,14 @@ import { useEffect, useState } from 'react';
 
 type BackendStatus = 'loading' | 'local' | 'connected' | 'unavailable';
 
+const isStaticDemo = process.env.NEXT_PUBLIC_STATIC_DEMO === 'true';
+
 export default function BackendStatusIndicator() {
   const [status, setStatus] = useState<BackendStatus>('loading');
 
   useEffect(() => {
+    if (isStaticDemo) return;
+
     let active = true;
 
     const checkStatus = async () => {
@@ -37,7 +41,7 @@ export default function BackendStatusIndicator() {
     };
   }, []);
 
-  if (status === 'loading' || status === 'local') return null;
+  if (isStaticDemo || status === 'loading' || status === 'local') return null;
 
   const connected = status === 'connected';
   return (

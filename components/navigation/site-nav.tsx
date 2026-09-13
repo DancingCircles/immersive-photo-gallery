@@ -5,6 +5,8 @@ import { Search, X } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { withPublicPath } from '@/shared/paths/public-path';
 
+const isStaticDemo = process.env.NEXT_PUBLIC_STATIC_DEMO === 'true';
+
 export default function SiteNav({
   current,
   searchValue = '',
@@ -32,18 +34,36 @@ export default function SiteNav({
     <nav className="site-nav" aria-label="页面导航">
       {children}
       <div className="site-nav__links">
-        <Link
-          href={withPublicPath('/')}
-          aria-current={current === 'featured' ? 'page' : undefined}
-        >
-          推荐
-        </Link>
-        <Link
-          href={withPublicPath('/gallery')}
-          aria-current={current === 'gallery' ? 'page' : undefined}
-        >
-          画廊
-        </Link>
+        {isStaticDemo ? (
+          <a
+            href={withPublicPath('/')}
+            aria-current={current === 'featured' ? 'page' : undefined}
+          >
+            推荐
+          </a>
+        ) : (
+          <Link
+            href={withPublicPath('/')}
+            aria-current={current === 'featured' ? 'page' : undefined}
+          >
+            推荐
+          </Link>
+        )}
+        {isStaticDemo ? (
+          <a
+            href={withPublicPath('/gallery')}
+            aria-current={current === 'gallery' ? 'page' : undefined}
+          >
+            画廊
+          </a>
+        ) : (
+          <Link
+            href={withPublicPath('/gallery')}
+            aria-current={current === 'gallery' ? 'page' : undefined}
+          >
+            画廊
+          </Link>
+        )}
       </div>
       {current === 'gallery' && onSearchChange && (
         <div className="site-nav__search" data-open={searchOpen}>
