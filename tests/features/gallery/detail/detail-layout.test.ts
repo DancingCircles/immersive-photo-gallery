@@ -92,3 +92,23 @@ void test('opening uses a compositor frame while the complete image fades in', (
   );
   assert.match(galleryPage, /\.set\(flight, \{ display: 'none' \}\)/);
 });
+
+void test('phone detail fills the viewport without a desktop divider', () => {
+  const phoneRules = stylesheet.match(
+    /@media \(max-width:\s*560px\)\s*{([\s\S]*?)}\s*@media/,
+  )?.[1];
+
+  assert.ok(phoneRules);
+  assert.match(
+    phoneRules,
+    /\.gallery-detail\s*{[^}]*width:\s*100vw;[^}]*border-left:\s*0;/,
+  );
+  assert.match(
+    phoneRules,
+    /\.gallery-detail__body\s*{[^}]*scrollbar-gutter:\s*auto;/,
+  );
+  assert.match(
+    phoneRules,
+    /\.gallery-detail__copy\s*{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\);/,
+  );
+});
