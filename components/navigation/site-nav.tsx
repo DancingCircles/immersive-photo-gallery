@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Search, X } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { withPublicPath } from '@/shared/paths/public-path';
 
 export default function SiteNav({
   current,
@@ -32,13 +33,13 @@ export default function SiteNav({
       {children}
       <div className="site-nav__links">
         <Link
-          href="/"
+          href={withPublicPath('/')}
           aria-current={current === 'featured' ? 'page' : undefined}
         >
           推荐
         </Link>
         <Link
-          href="/gallery"
+          href={withPublicPath('/gallery')}
           aria-current={current === 'gallery' ? 'page' : undefined}
         >
           画廊

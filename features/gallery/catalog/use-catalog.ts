@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import type { CursorPage } from '@/application/ports/content-repository';
 import type { WorkSummary } from '@/domain/work/work';
-import { listGalleryWorks } from '@/infrastructure/http/same-origin-content-client';
+import { listGalleryWorks } from '@/infrastructure/content-client';
 import { createGalleryCatalogState, galleryCatalogReducer } from './catalog-state';
 
 const PAGE_LIMIT = 48;

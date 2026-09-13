@@ -181,6 +181,10 @@ npm run build
 
 项目包含 OpenAI Sites 配置，但当前未启用 D1 数据库或 R2 对象存储。
 
+## GitHub Pages 展示
+
+公开仓库包含 [`Deploy GitHub Pages`](.github/workflows/deploy-github-pages.yml) 工作流。推送到 `main` 后，GitHub Actions 会使用仓库内的离线快照构建前端展示版，不需要 Go API、数据库或其他后端服务。项目站点地址为 `https://dancingcircles.github.io/immersive-photo-gallery/`；如果仓库名称发生变化，需要同步调整工作流中的 `NEXT_PUBLIC_BASE_PATH`。
+
 ## 素材与许可
 
 `public/art/demo/` 包含已发布内容的离线展示快照。每件实际使用的摄影作品，其作者、来源和许可证都已在 `infrastructure/local/fixtures.ts` 中保留，并会在作品详情中显示；其中包含 CC0 及 CC BY-SA 素材。再次发布、替换或扩充快照前，请核验各作品来源页的最新授权条件。

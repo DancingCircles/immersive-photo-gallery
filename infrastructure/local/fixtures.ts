@@ -1,4 +1,5 @@
 import type { WorkDetail } from '../../domain/work/work.ts';
+import { withPublicPath } from '../../shared/paths/public-path.ts';
 
 // Published backend catalogue snapshot captured on 2026-09-12. The matching
 // images live in public/art/demo, so the open-source presentation runs offline.
@@ -612,7 +613,7 @@ export const workFixtures: WorkDetail[] = snapshotRecords.map(
   (record, index) => {
     const { width, height, ...work } = record;
     const image = {
-      src: `/art/demo/${String(index + 1).padStart(2, '0')}.webp`,
+      src: withPublicPath(`/art/demo/${String(index + 1).padStart(2, '0')}.webp`),
       width,
       height,
       alt: `${work.title} by ${work.photographerName}`,

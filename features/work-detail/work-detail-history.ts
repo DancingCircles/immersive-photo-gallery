@@ -1,7 +1,9 @@
+import { withPublicPath } from '../../shared/paths/public-path.ts';
+
 type DetailHistory = Pick<History, 'state' | 'pushState' | 'replaceState'>;
 
 export function workPath(id: string) {
-  return `/works/${encodeURIComponent(id)}`;
+  return withPublicPath(`/works/${encodeURIComponent(id)}`);
 }
 
 export function workReturnTo(state: unknown): string {

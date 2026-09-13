@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { WorkDetail } from '@/domain/work/work';
 import type { WorkDetailState } from './use-work-detail';
 import PromptCopyBlocks from './prompt-copy-blocks';
+import { withPublicPath } from '@/shared/paths/public-path';
 
 export function WorkAttribution({ work }: { work: WorkDetail }) {
   return (
@@ -81,7 +82,7 @@ export default function WorkDetailView({ work }: { work: WorkDetail }) {
     <main className="work-detail-page">
       <header style={{ display: 'flex', justifyContent: 'space-between' }}>
         <span>SELECTED WORK</span>
-        <Link href="/gallery">返回画廊</Link>
+        <Link href={withPublicPath('/gallery')}>返回画廊</Link>
       </header>
       <article className="work-detail-page__article">
         <div className="work-detail-page__media">

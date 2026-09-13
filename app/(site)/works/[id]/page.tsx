@@ -2,7 +2,12 @@ import { notFound } from 'next/navigation';
 import { getWork } from '@/application/queries/get-work';
 import { ContentError } from '@/application/errors/content-error';
 import { getContentRepository } from '@/infrastructure/config/content-source';
+import { workFixtures } from '@/infrastructure/local/fixtures';
 import WorkDetailView from '@/features/work-detail/work-detail-view';
+
+export function generateStaticParams() {
+  return workFixtures.map(({ id }) => ({ id }));
+}
 
 export default async function WorkPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

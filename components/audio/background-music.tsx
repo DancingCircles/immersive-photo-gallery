@@ -2,6 +2,7 @@
 
 import { Volume1, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { withPublicPath } from '@/shared/paths/public-path';
 
 const TRACK_TITLE = 'Memories in Soft Light';
 const STORAGE_KEY = 'background-music:settings';
@@ -93,7 +94,7 @@ export default function BackgroundMusic() {
       <audio
         ref={audioRef}
         className="background-music__audio"
-        src="/audio/memories-in-soft-light.mp3"
+        src={withPublicPath('/audio/memories-in-soft-light.mp3')}
         loop
         preload="auto"
         aria-label={TRACK_TITLE}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { WorkDetail } from '@/domain/work/work';
-import { getWork } from '@/infrastructure/http/same-origin-content-client';
+import { getWork } from '@/infrastructure/content-client';
 
 export type WorkDetailState =
   | { status: 'idle' | 'loading'; work: null; error: null }
